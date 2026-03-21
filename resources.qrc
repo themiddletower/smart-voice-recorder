@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/backend">
+        <file>backend/example.wav</file>
+    </qresource>
+    <qresource prefix="/">
+        <file>backend/example.mp3</file>
+        <file>backend/example.wav</file>
+    </qresource>
+</RCC>

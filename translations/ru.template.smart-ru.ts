@@ -85,46 +85,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/RecordingPage.qml" line="53"/>
+        <location filename="../qml/pages/RecordingPage.qml" line="54"/>
         <source>Вернуться на главную страницу</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>RedactingPage</name>
-    <message>
-        <location filename="../qml/pages/RedactingPage.qml" line="21"/>
-        <source>Redacting Page</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/RedactingPage.qml" line="25"/>
-        <source>Вы сейчас находитесь на странице редактирования звука</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/RedactingPage.qml" line="31"/>
-        <source>Выбрать звуковой файл</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/RedactingPage.qml" line="65"/>
-        <source>Удаление пауз</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/RedactingPage.qml" line="74"/>
-        <source>Сегментирование речевых моментов</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/RedactingPage.qml" line="82"/>
-        <source>Вернуться на главную страницу</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/RedactingPage.qml" line="91"/>
-        <source>Выберите ваш звуковой файл</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

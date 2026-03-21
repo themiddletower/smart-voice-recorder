@@ -3,16 +3,36 @@ TARGET = ru.template.smart
 CONFIG += \
     auroraapp
 
+QT += core network qml gui quick multimedia
+
 PKGCONFIG += \
 
 SOURCES += \
+    backend/amplitudemodelfillerPlayer.cpp \
+    backend/audioamplitudePlayer.cpp \
+    backend/audioamplitudemodelPlayer.cpp \
+    backend/audiobufferextensionPlayer.cpp \
+    backend/audioplayercontrollerPlayer.cpp \
+    backend/audiorecorderPlayer.cpp \
     backend/sessionmanag.cpp \
+    backend/timelineblockPlayer.cpp \
+    backend/timelinemodelPlayer.cpp \
     src/main.cpp \
 
 HEADERS += \
-    backend/sessionmanag.h
+    backend/amplitudemodelfillerPlayer.h \
+    backend/audioamplitudePlayer.h \
+    backend/audioamplitudemodelPlayer.h \
+    backend/audiobufferextensionPlayer.h \
+    backend/audioplayercontrollerPlayer.h \
+    backend/audiorecorderPlayer.h \
+    backend/sessionmanag.h \
+    backend/timelineblockPlayer.h \
+    backend/timelinemodelPlayer.h
 
 DISTFILES += \
+    qml/components/RecordTrack.qml \
+    qml/pages/AudioFileListPage.qml \
     qml/pages/RecordingPage.qml \
     qml/pages/RedactingPage.qml \
     rpm/ru.template.smart.spec \
@@ -24,3 +44,6 @@ CONFIG += auroraapp_i18n
 TRANSLATIONS += \
     translations/ru.template.smart.ts \
     translations/ru.template.smart-ru.ts \
+
+RESOURCES += \
+    resources.qrc
