@@ -1,0 +1,417 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  font-size: 14px;
+}
+.v1_1540 {
+  width: 393px;
+  height: 873px;
+  background: rgba(15,18,25,1);
+  opacity: 1;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  overflow: hidden;
+}
+.v1_1541 {
+  width: 393px;
+  height: 40px;
+  background: rgba(217,217,217,1);
+  opacity: 1;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  overflow: hidden;
+}
+.v1_1542 {
+  width: 140px;
+  color: rgba(255,249,249,1);
+  position: absolute;
+  top: 98px;
+  left: 130px;
+  font-family: Inter;
+  font-weight: Bold;
+  font-size: 20px;
+  opacity: 1;
+  text-align: left;
+}
+.v3_2 {
+  width: 76px;
+  color: rgba(255,255,255,1);
+  position: absolute;
+  top: 60px;
+  left: 3px;
+  font-family: Inter;
+  font-weight: Regular;
+  font-size: 20px;
+  opacity: 1;
+  text-align: left;
+}
+.v3_4 {
+  width: 76px;
+  color: rgba(255,255,255,1);
+  position: absolute;
+  top: 60px;
+  left: 316px;
+  font-family: Inter;
+  font-weight: Regular;
+  font-size: 20px;
+  opacity: 1;
+  text-align: left;
+}
+.v3_5 {
+  width: 228px;
+  color: rgba(255,255,255,1);
+  position: absolute;
+  top: 120px;
+  left: 82px;
+  font-family: Inter;
+  font-weight: Bold;
+  font-size: 48px;
+  opacity: 1;
+  text-align: left;
+}
+.v3_6 {
+  width: 361px;
+  height: 100px;
+  background: linear-gradient(rgba(42,47,63,1), rgba(26,30,42,1));
+  opacity: 1;
+  position: absolute;
+  top: 200px;
+  left: 16px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  overflow: hidden;
+}
+.v3_33 {
+  width: 153px;
+  height: 54px;
+  background: url("../images/v3_33.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  margin: 6px;
+  opacity: 1;
+  position: absolute;
+  top: 222px;
+  left: 119px;
+  overflow: hidden;
+}
+.v3_22 {
+  width: 73px;
+  height: 54px;
+  background: url("../images/v3_22.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  opacity: 1;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  overflow: hidden;
+}
+.v3_7 {
+  width: 4px;
+  height: 40px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 4px;
+  left: 0px;
+  overflow: hidden;
+}
+.v3_8 {
+  width: 4px;
+  height: 28px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 12px;
+  left: 11px;
+  overflow: hidden;
+}
+.v3_10 {
+  width: 4px;
+  height: 52px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 0px;
+  left: 20px;
+  overflow: hidden;
+}
+.v3_12 {
+  width: 4px;
+  height: 36px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 6px;
+  left: 30px;
+  overflow: hidden;
+}
+.v3_14 {
+  width: 4px;
+  height: 44px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 6px;
+  left: 41px;
+  overflow: hidden;
+}
+.v3_16 {
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 14px;
+  left: 49px;
+  overflow: hidden;
+}
+.v3_18 {
+  width: 4px;
+  height: 48px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 6px;
+  left: 60px;
+  overflow: hidden;
+}
+.v3_20 {
+  width: 4px;
+  height: 32px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 12px;
+  left: 69px;
+  overflow: hidden;
+}
+.v3_23 {
+  width: 74px;
+  height: 53px;
+  background: url("../images/v3_23.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  opacity: 1;
+  position: absolute;
+  top: 1px;
+  left: 79px;
+  overflow: hidden;
+}
+.v3_24 {
+  width: 4px;
+  height: 40px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 5px;
+  left: 0px;
+  overflow: hidden;
+}
+.v3_25 {
+  width: 4px;
+  height: 28px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 15px;
+  left: 10px;
+  overflow: hidden;
+}
+.v3_26 {
+  width: 4px;
+  height: 52px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 0px;
+  left: 20px;
+  overflow: hidden;
+}
+.v3_27 {
+  width: 4px;
+  height: 36px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 5px;
+  left: 30px;
+  overflow: hidden;
+}
+.v3_28 {
+  width: 4px;
+  height: 44px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 5px;
+  left: 40px;
+  overflow: hidden;
+}
+.v3_29 {
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 13px;
+  left: 50px;
+  overflow: hidden;
+}
+.v3_30 {
+  width: 4px;
+  height: 48px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 5px;
+  left: 60px;
+  overflow: hidden;
+}
+.v3_31 {
+  width: 4px;
+  height: 32px;
+  background: linear-gradient(rgba(76,175,80,1), rgba(92,175,145,1));
+  opacity: 1;
+  position: absolute;
+  top: 11px;
+  left: 70px;
+  overflow: hidden;
+}
+.v3_34 {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(rgba(229,57,53,0), rgba(229,57,53,1));
+  opacity: 1;
+  position: absolute;
+  top: 740px;
+  left: 164px;
+  border-radius: 50%;
+  box-shadow: 0px 4px 12px rgba(0.10196078568696976, 0.11764705926179886, 0.16470588743686676, 0.25);
+}
+.v7_37 {
+  width: 64px;
+  color: rgba(0,0,0,1);
+  position: absolute;
+  top: 7px;
+  left: 338px;
+  font-family: Inter;
+  font-weight: Bold;
+  font-size: 20px;
+  opacity: 1;
+  text-align: left;
+}
+.v7_39 {
+  width: 361px;
+  height: 48px;
+  background: rgba(255,183,77,1);
+  opacity: 1;
+  position: absolute;
+  top: 320px;
+  left: 16px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  overflow: hidden;
+}
+.v7_40 {
+  width: 178px;
+  color: rgba(0,0,0,1);
+  position: absolute;
+  top: 332px;
+  left: 24px;
+  font-family: Inter;
+  font-weight: Bold;
+  font-size: 20px;
+  opacity: 1;
+  text-align: left;
+}
+.v7_41 {
+  width: 361px;
+  height: 6px;
+  background: rgba(42,47,63,1);
+  opacity: 1;
+  position: absolute;
+  top: 400px;
+  left: 16px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  overflow: hidden;
+}
+.v7_42 {
+  width: 80px;
+  height: 6px;
+  background: rgba(76,175,80,1);
+  opacity: 1;
+  position: absolute;
+  top: 400px;
+  left: 16px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  overflow: hidden;
+}
+.v7_76 {
+  width: 120px;
+  height: 6px;
+  background: rgba(76,175,80,1);
+  opacity: 1;
+  position: absolute;
+  top: 400px;
+  left: 100px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  overflow: hidden;
+}
+.v7_78 {
+  width: 50px;
+  height: 6px;
+  background: rgba(76,175,80,1);
+  opacity: 1;
+  position: absolute;
+  top: 400px;
+  left: 225px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  overflow: hidden;
+}
+.v7_80 {
+  width: 90px;
+  height: 6px;
+  background: rgba(76,175,80,1);
+  opacity: 1;
+  position: absolute;
+  top: 400px;
+  left: 280px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  overflow: hidden;
+}
+.v7_82 {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(rgba(255,255,255,0.10000000149011612), rgba(229,57,53,1));
+  opacity: 1;
+  position: absolute;
+  top: 756px;
+  left: 181px;
+  border-radius: 50%;
+}
