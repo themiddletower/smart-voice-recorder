@@ -7,25 +7,118 @@ import "../components"
 
 Page {
     id: page
-    objectName: "redactingPage"
+    objectName: "mainPage"
 
     property string filePath: ""
     property alias fileName: header.headerText
 
+    // ===== ВХОДНЫЕ ДАННЫЕ (как вы говорили) =====
     property var fileAnnotations: [
-        {"t1": 500, "t2": 2500, "type": 1},
-        {"t1": 2500, "t2": 4000, "type": 2},
-        {"t1": 4000, "t2": 7200, "type": 1},
-        {"t1": 7200, "t2": 10700, "type": 2},
-        {"t1": 10700, "t2": 13000, "type": 1},
-        {"t1": 12000, "t2": 15000, "type": 3}
+        {"t1": 2000, "t2": 6000, "type": 1},
+        {"t1": 6000, "t2": 9000, "type": 2},
+        {"t1": 12000, "t2": 15000, "type": 1},
+        {"t1": 16000, "t2": 19000, "type": 3}
     ]
 
-    // должно совпадать с C++ и формулами
+    // ===== MOCK: результат будущей функции "удалить тишину" =====
+    // Здесь вы руками задаёте новый набор аннотаций (уже без type=2)
+    // и с "пересчитанными" t1/t2 (любые значения, как будто пришли с бэкенда).
+    property var mockAnnotationsAfterRemoveSilence: [
+        {"t1": 0,    "t2": 3000, "type": 1},
+        {"t1": 4200, "t2": 7200, "type": 1},
+        {"t1": 7300, "t2": 9800, "type": 3}
+    ]
+
+    property bool isSilenceRemovedMock: false
+
+    // ===== Имена только для type=1 (голос) =====
+    property var voiceLabels: []
+    property var annotationsWithIds: []
+
     readonly property int measurementsPerSec: 10
     readonly property int barWidthPx: 6
+    readonly property int pxPerSecond: measurementsPerSec * barWidthPx
 
-    Component.onCompleted: playerController.isPlayerPage = true
+    function rebuildVoiceIdsAndTitles() {
+        var voiceCounter = 0
+        var result = []
+        for (var i = 0; i < fileAnnotations.length; i++) {
+            var a = fileAnnotations[i]
+            var obj = { "t1": a.t1, "t2": a.t2, "type": a.type }
+            if (a.type === 1) {
+                voiceCounter++
+                obj.voiceId = voiceCounter
+            }
+            result.push(obj)
+        }
+        annotationsWithIds = result
+
+        var newLabels = []
+        for (var id = 1; id <= voiceCounter; id++) {
+            var found = null
+            for (var j = 0; j < voiceLabels.length; j++) {
+                if (voiceLabels[j].voiceId === id) {
+                    found = voiceLabels[j]
+                    break
+                }
+            }
+            if (found) newLabels.push(found)
+            else newLabels.push({ "voiceId": id, "title": "человеческая речь" + id })
+        }
+        voiceLabels = newLabels
+    }
+
+    function titleForVoiceId(voiceId) {
+        for (var i = 0; i < voiceLabels.length; i++) {
+            if (voiceLabels[i].voiceId === voiceId)
+                return voiceLabels[i].title
+        }
+        return "человеческая речь" + voiceId
+    }
+
+    function setTitleForVoiceId(voiceId, newTitle) {
+        var t = (newTitle || "").trim()
+        if (t.length === 0)
+            t = "человеческая речь" + voiceId
+
+        for (var i = 0; i < voiceLabels.length; i++) {
+            if (voiceLabels[i].voiceId === voiceId) {
+                voiceLabels[i].title = t
+                voiceLabels = voiceLabels
+                return
+            }
+        }
+    }
+
+    function applyMockRemoveSilence() {
+        if (!filePath || filePath === "")
+            return
+
+        // 1) "как будто" применили обработку и получили новый набор меток
+        fileAnnotations = mockAnnotationsAfterRemoveSilence
+        isSilenceRemovedMock = true
+
+        // 2) пересобрать voiceId и названия (названия сохранятся по порядку голосов)
+        rebuildVoiceIdsAndTitles()
+
+        // 3) обновить раскраску амплитуд
+        playerController.audioAmplitudeModel.applyAnnotations(fileAnnotations, measurementsPerSec)
+
+        // 4) "как будто" загрузили модифицированный файл
+        // В реальной версии здесь будет новый путь, например:
+        // filePath = result.newFilePath
+        playerController.stop()
+        playerController.setSource(filePath)
+
+        // (необязательно) сбросить прокрутку и позицию визуально произойдет после setSource
+    }
+
+    Component.onCompleted: {
+        playerController.isPlayerPage = true
+        rebuildVoiceIdsAndTitles()
+    }
+
+    onFileAnnotationsChanged: rebuildVoiceIdsAndTitles()
 
     onStatusChanged: {
         if (status === PageStatus.Deactivating)
@@ -74,17 +167,22 @@ Page {
             visible: filePath !== "" && !playerController.isDecoding
             clip: true
 
-            // фоновые линии заметок
             Item {
+                id: marksLayer
                 width: waveformList.contentWidth
                 height: parent.height
                 x: -waveformList.contentX
+                z: 1
 
                 Repeater {
-                    model: page.fileAnnotations
+                    model: page.annotationsWithIds
+
                     Item {
-                        x: (modelData.t1 / 1000.0) * measurementsPerSec * barWidthPx
-                        width: ((modelData.t2 - modelData.t1) / 1000.0) * measurementsPerSec * barWidthPx
+                        property real x1: (modelData.t1 / 1000.0) * pxPerSecond
+                        property real w: ((modelData.t2 - modelData.t1) / 1000.0) * pxPerSecond
+
+                        x: x1
+                        width: w
                         height: parent.height
 
                         Rectangle {
@@ -94,12 +192,76 @@ Page {
                             color: getColorForType(modelData.type)
                             opacity: 0.8
                         }
+
                         Rectangle {
                             anchors.right: parent.right
                             width: 2
                             height: parent.height
                             color: getColorForType(modelData.type)
                             opacity: 0.8
+                        }
+
+                        // Подпись для type=1
+                        Item {
+                            visible: modelData.type === 1
+                            anchors {
+                                left: parent.left
+                                bottom: parent.bottom
+                                bottomMargin: Theme.paddingSmall
+                            }
+                            width: Math.min(240, waveformContainer.width)
+                            height: Theme.itemSizeSmall
+                            property bool editing: false
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 6
+                                color: Theme.rgba(Theme.highlightBackgroundColor, 0.15)
+                            }
+
+                            Label {
+                                anchors.fill: parent
+                                anchors.leftMargin: Theme.paddingSmall
+                                anchors.rightMargin: Theme.paddingSmall
+                                verticalAlignment: Text.AlignVCenter
+                                text: page.titleForVoiceId(modelData.voiceId)
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                color: Theme.primaryColor
+                                elide: Text.ElideRight
+                                visible: !parent.editing
+                            }
+
+                            TextField {
+                                id: editField
+                                anchors.fill: parent
+                                anchors.leftMargin: Theme.paddingSmall
+                                anchors.rightMargin: Theme.paddingSmall
+                                text: page.titleForVoiceId(modelData.voiceId)
+                                font.pixelSize: Theme.fontSizeExtraSmall
+                                visible: parent.editing
+
+                                onActiveFocusChanged: {
+                                    if (!activeFocus && parent.editing) {
+                                        page.setTitleForVoiceId(modelData.voiceId, text)
+                                        parent.editing = false
+                                    }
+                                }
+
+                                EnterKey.onClicked: {
+                                    page.setTitleForVoiceId(modelData.voiceId, text)
+                                    parent.editing = false
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: !parent.editing
+                                onClicked: {
+                                    parent.editing = true
+                                    editField.forceActiveFocus()
+                                    editField.selectAll()
+                                }
+                            }
                         }
                     }
                 }
@@ -111,14 +273,22 @@ Page {
                 orientation: ListView.Horizontal
                 model: playerController.audioAmplitudeModel
                 boundsBehavior: Flickable.StopAtBounds
+                z: 0
 
                 Connections {
                     target: playerController
                     onPositionChanged: {
-                        if (playerController.isPlaying) {
-                            var currentItemIndex = Math.floor((playerController.position / 1000) * measurementsPerSec)
-                            waveformList.positionViewAtIndex(currentItemIndex, ListView.Contain)
-                        }
+                        if (!playerController.isPlaying)
+                            return
+
+                        var xTime = (playerController.position / 1000.0) * pxPerSecond
+                        var targetContentX = xTime - waveformList.width / 2
+
+                        var maxX = Math.max(0, waveformList.contentWidth - waveformList.width)
+                        if (targetContentX < 0) targetContentX = 0
+                        if (targetContentX > maxX) targetContentX = maxX
+
+                        waveformList.contentX = targetContentX
                     }
                 }
 
@@ -127,7 +297,6 @@ Page {
                     height: waveformList.height
 
                     Rectangle {
-                        id: bar
                         anchors.centerIn: parent
                         width: 4
                         height: Math.max(4, model.value * parent.height)
@@ -135,13 +304,9 @@ Page {
                         color: getColorForType(model.annotationType)
                     }
 
-                    // ТАП ПО БАРУ -> SEEK
-                    // Скролл не ломаем, потому что MouseArea только на баре,
-                    // и Flickable всё равно умеет перехватывать drag.
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            // index = номер бара
                             var ms = (index / measurementsPerSec) * 1000.0
                             pageRoot.seekToMs(ms)
                         }
@@ -149,12 +314,12 @@ Page {
                 }
             }
 
-            // плейхед
             Rectangle {
                 width: 2
                 height: parent.height
                 color: "red"
-                x: ((playerController.position / 1000.0) * measurementsPerSec * barWidthPx) - waveformList.contentX
+                z: 5
+                x: ((playerController.position / 1000.0) * pxPerSecond) - waveformList.contentX
                 visible: x > 0 && x < parent.width
             }
         }
@@ -169,7 +334,7 @@ Page {
         Label {
             id: timePassed
             anchors {
-                bottom: playButton.top
+                bottom: controlsRow.top
                 horizontalCenter: parent.horizontalCenter
                 margins: Theme.horizontalPageMargin
             }
@@ -178,31 +343,42 @@ Page {
             visible: filePath !== "" && !playerController.isDecoding
         }
 
-        IconButton {
-            id: playButton
+        Row {
+            id: controlsRow
+            spacing: Theme.paddingLarge
             anchors {
                 horizontalCenter: parent.horizontalCenter
                 bottom: parent.bottom
                 margins: Theme.horizontalPageMargin
             }
-            icon {
-                source: playerController.isPlaying ? "image://theme/icon-m-pause"
-                                                   : "image://theme/icon-m-simple-play"
-                width: Theme.iconSizeLarge
-                height: Theme.iconSizeLarge
-            }
-            height: icon.height
-            width: icon.width
-            enabled: playerController.isPlaybackAvailable && filePath !== "" && !playerController.isDecoding
-            visible: filePath !== ""
 
-            onClicked: {
-                if (playerController.isPlaying) {
-                    playerController.stop()
-                } else {
-                    var startPosMs = (waveformList.contentX / barWidthPx / measurementsPerSec) * 1000
-                    startPosMs = Math.max(0, startPosMs)
-                    playerController.play(startPosMs)
+            // MOCK кнопка "удалить тишину"
+            IconButton {
+                icon.source: "image://theme/icon-m-delete"
+                enabled: filePath !== "" && !playerController.isDecoding && !isSilenceRemovedMock
+                onClicked: applyMockRemoveSilence()
+            }
+
+            IconButton {
+                id: playButton
+                icon {
+                    source: playerController.isPlaying ? "image://theme/icon-m-pause"
+                                                       : "image://theme/icon-m-simple-play"
+                    width: Theme.iconSizeLarge
+                    height: Theme.iconSizeLarge
+                }
+                height: icon.height
+                width: icon.width
+                enabled: playerController.isPlaybackAvailable && filePath !== "" && !playerController.isDecoding
+
+                onClicked: {
+                    if (playerController.isPlaying) {
+                        playerController.stop()
+                    } else {
+                        var startPosMs = ((waveformList.contentX + waveformList.width / 2) / pxPerSecond) * 1000
+                        startPosMs = Math.max(0, startPosMs)
+                        playerController.play(startPosMs)
+                    }
                 }
             }
         }
@@ -228,6 +404,12 @@ Page {
                 var selectedPath = dialog.selectedContentProperties.filePath
                 filePath = selectedPath
                 header.headerText = dialog.selectedContentProperties.fileName || selectedPath.split('/').pop()
+
+                // новый файл -> сброс mock и подписи
+                isSilenceRemovedMock = false
+                voiceLabels = []
+                rebuildVoiceIdsAndTitles()
+
                 playerController.setSource(selectedPath)
                 pageStack.pop()
             }
