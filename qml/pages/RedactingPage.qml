@@ -1,18 +1,22 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-import ru.auroraos.AudioRecorder 1.0
 import Aurora.Controls 1.0
 import Sailfish.Pickers 1.0
+import ru.auroraos.AudioRecorder 1.0
 import "../components"
 
 Page {
     id: page
     objectName: "mainPage"
 
+    readonly property int silence_type: 2
+    readonly property int measurementsPerSec: 10
+    readonly property int barWidthPx: 6
+    readonly property int pxPerSecond: measurementsPerSec * barWidthPx
+
     property string filePath: ""
     property alias fileName: header.headerText
 
-    // ===== ВХОДНЫЕ ДАННЫЕ (как вы говорили) =====
     property var fileAnnotations: [
         {"t1": 2000, "t2": 6000, "type": 1},
         {"t1": 6000, "t2": 9000, "type": 2},
@@ -20,24 +24,12 @@ Page {
         {"t1": 16000, "t2": 19000, "type": 3}
     ]
 
-    // ===== MOCK: результат будущей функции "удалить тишину" =====
-    // Здесь вы руками задаёте новый набор аннотаций (уже без type=2)
-    // и с "пересчитанными" t1/t2 (любые значения, как будто пришли с бэкенда).
-    property var mockAnnotationsAfterRemoveSilence: [
-        {"t1": 0,    "t2": 3000, "type": 1},
-        {"t1": 4200, "t2": 7200, "type": 1},
-        {"t1": 7300, "t2": 9800, "type": 3}
-    ]
-
-    property bool isSilenceRemovedMock: false
-
-    // ===== Имена только для type=1 (голос) =====
     property var voiceLabels: []
     property var annotationsWithIds: []
 
-    readonly property int measurementsPerSec: 10
-    readonly property int barWidthPx: 6
-    readonly property int pxPerSecond: measurementsPerSec * barWidthPx
+    property string lastError: ""
+
+    SilenceService { id: silenceService }
 
     function rebuildVoiceIdsAndTitles() {
         var voiceCounter = 0
@@ -57,10 +49,7 @@ Page {
         for (var id = 1; id <= voiceCounter; id++) {
             var found = null
             for (var j = 0; j < voiceLabels.length; j++) {
-                if (voiceLabels[j].voiceId === id) {
-                    found = voiceLabels[j]
-                    break
-                }
+                if (voiceLabels[j].voiceId === id) { found = voiceLabels[j]; break }
             }
             if (found) newLabels.push(found)
             else newLabels.push({ "voiceId": id, "title": "человеческая речь" + id })
@@ -78,9 +67,7 @@ Page {
 
     function setTitleForVoiceId(voiceId, newTitle) {
         var t = (newTitle || "").trim()
-        if (t.length === 0)
-            t = "человеческая речь" + voiceId
-
+        if (t.length === 0) t = "человеческая речь" + voiceId
         for (var i = 0; i < voiceLabels.length; i++) {
             if (voiceLabels[i].voiceId === voiceId) {
                 voiceLabels[i].title = t
@@ -90,27 +77,39 @@ Page {
         }
     }
 
-    function applyMockRemoveSilence() {
+    function removeSilenceNow() {
         if (!filePath || filePath === "")
             return
 
-        // 1) "как будто" применили обработку и получили новый набор меток
-        fileAnnotations = mockAnnotationsAfterRemoveSilence
-        isSilenceRemovedMock = true
+        lastError = ""
+        playerController.stop()
 
-        // 2) пересобрать voiceId и названия (названия сохранятся по порядку голосов)
+        var r = silenceService.removeSilence(filePath, fileAnnotations, silence_type)
+
+        if (!r) {
+            lastError = "removeSilence(): returned null/undefined"
+            return
+        }
+
+        if (r.error !== undefined && r.error !== "") {
+            lastError = r.error
+            return
+        }
+
+        if (r.outputPath === undefined || r.annotations === undefined) {
+            lastError = "removeSilence(): invalid result (no outputPath/annotations)"
+            return
+        }
+
+        // применяем результат только если он валидный
+        filePath = r.outputPath
+        header.headerText = filePath ? filePath.split('/').pop() : ""
+
+        fileAnnotations = r.annotations
         rebuildVoiceIdsAndTitles()
 
-        // 3) обновить раскраску амплитуд
-        playerController.audioAmplitudeModel.applyAnnotations(fileAnnotations, measurementsPerSec)
-
-        // 4) "как будто" загрузили модифицированный файл
-        // В реальной версии здесь будет новый путь, например:
-        // filePath = result.newFilePath
-        playerController.stop()
         playerController.setSource(filePath)
-
-        // (необязательно) сбросить прокрутку и позицию визуально произойдет после setSource
+        playerController.audioAmplitudeModel.applyAnnotations(fileAnnotations, measurementsPerSec)
     }
 
     Component.onCompleted: {
@@ -119,11 +118,6 @@ Page {
     }
 
     onFileAnnotationsChanged: rebuildVoiceIdsAndTitles()
-
-    onStatusChanged: {
-        if (status === PageStatus.Deactivating)
-            playerController.stop()
-    }
 
     Connections {
         target: playerController
@@ -144,17 +138,14 @@ Page {
 
     Item {
         id: pageRoot
-        anchors {
-            left: parent.left; right: parent.right
-            top: header.bottom; bottom: parent.bottom
-        }
+        anchors { left: parent.left; right: parent.right; top: header.bottom; bottom: parent.bottom }
 
+        // FIX: функция теперь тут, и вызовы pageRoot.seekToMs(...) корректны
         function seekToMs(ms) {
             if (ms < 0) ms = 0
             var wasPlaying = playerController.isPlaying
             playerController.play(ms)
-            if (!wasPlaying)
-                playerController.stop()
+            if (!wasPlaying) playerController.stop()
         }
 
         Item {
@@ -168,7 +159,6 @@ Page {
             clip: true
 
             Item {
-                id: marksLayer
                 width: waveformList.contentWidth
                 height: parent.height
                 x: -waveformList.contentX
@@ -178,11 +168,8 @@ Page {
                     model: page.annotationsWithIds
 
                     Item {
-                        property real x1: (modelData.t1 / 1000.0) * pxPerSecond
-                        property real w: ((modelData.t2 - modelData.t1) / 1000.0) * pxPerSecond
-
-                        x: x1
-                        width: w
+                        x: (modelData.t1 / 1000.0) * pxPerSecond
+                        width: ((modelData.t2 - modelData.t1) / 1000.0) * pxPerSecond
                         height: parent.height
 
                         Rectangle {
@@ -201,14 +188,9 @@ Page {
                             opacity: 0.8
                         }
 
-                        // Подпись для type=1
                         Item {
                             visible: modelData.type === 1
-                            anchors {
-                                left: parent.left
-                                bottom: parent.bottom
-                                bottomMargin: Theme.paddingSmall
-                            }
+                            anchors { left: parent.left; bottom: parent.bottom; bottomMargin: Theme.paddingSmall }
                             width: Math.min(240, waveformContainer.width)
                             height: Theme.itemSizeSmall
                             property bool editing: false
@@ -278,8 +260,7 @@ Page {
                 Connections {
                     target: playerController
                     onPositionChanged: {
-                        if (!playerController.isPlaying)
-                            return
+                        if (!playerController.isPlaying) return
 
                         var xTime = (playerController.position / 1000.0) * pxPerSecond
                         var targetContentX = xTime - waveformList.width / 2
@@ -352,15 +333,13 @@ Page {
                 margins: Theme.horizontalPageMargin
             }
 
-            // MOCK кнопка "удалить тишину"
             IconButton {
                 icon.source: "image://theme/icon-m-delete"
-                enabled: filePath !== "" && !playerController.isDecoding && !isSilenceRemovedMock
-                onClicked: applyMockRemoveSilence()
+                enabled: filePath !== "" && !playerController.isDecoding
+                onClicked: removeSilenceNow()
             }
 
             IconButton {
-                id: playButton
                 icon {
                     source: playerController.isPlaying ? "image://theme/icon-m-pause"
                                                        : "image://theme/icon-m-simple-play"
@@ -381,6 +360,20 @@ Page {
                     }
                 }
             }
+        }
+
+        Label {
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: timePassed.top
+                margins: Theme.horizontalPageMargin
+            }
+            text: lastError
+            visible: lastError.length > 0
+            color: "red"
+            wrapMode: Text.Wrap
+            font.pixelSize: Theme.fontSizeSmall
         }
 
         Label {
@@ -405,8 +398,7 @@ Page {
                 filePath = selectedPath
                 header.headerText = dialog.selectedContentProperties.fileName || selectedPath.split('/').pop()
 
-                // новый файл -> сброс mock и подписи
-                isSilenceRemovedMock = false
+                lastError = ""
                 voiceLabels = []
                 rebuildVoiceIdsAndTitles()
 

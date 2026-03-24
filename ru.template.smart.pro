@@ -15,6 +15,9 @@ SOURCES += \
     backend/audioplayercontrollerPlayer.cpp \
     backend/audiorecorderPlayer.cpp \
     backend/sessionmanag.cpp \
+    backend/silenceremover.cpp \
+    backend/silenceremover_qt.cpp \
+    backend/silenceservice.cpp \
     backend/timelineblockPlayer.cpp \
     backend/timelinemodelPlayer.cpp \
     src/main.cpp \
@@ -27,6 +30,9 @@ HEADERS += \
     backend/audioplayercontrollerPlayer.h \
     backend/audiorecorderPlayer.h \
     backend/sessionmanag.h \
+    backend/silenceremover.h \
+    backend/silenceremover_qt.h \
+    backend/silenceservice.h \
     backend/timelineblockPlayer.h \
     backend/timelinemodelPlayer.h
 

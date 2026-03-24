@@ -4,15 +4,19 @@
 //#include "./backend/sessionmanager.h"
 //#include "audiorecordercontroller.h"
 #include "./backend/audioplayercontrollerPlayer.h"
+#include "./backend/silenceservice.h"
 int main(int argc, char *argv[])
 {
     QScopedPointer<QGuiApplication> application(Aurora::Application::application(argc, argv));
     application->setOrganizationName(QStringLiteral("ru.template"));
     application->setApplicationName(QStringLiteral("smart"));
 
-    //qmlRegisterType<SessionManager>("com.example.sessions", 1, 0, "SessionManager");
+
     qmlRegisterType<AudioPlayerController>("ru.auroraos.AudioRecorder", 1, 0,
                                            "AudioPlayerController");
+
+    qmlRegisterType<SilenceService>("ru.auroraos.AudioRecorder", 1, 0, "SilenceService");
+
 
     //qmlRegisterType<AudioRecorderController>("ru.auroraos.AudioRecorder", 1, 0,
     //                                         "AudioRecorderController");
