@@ -18,10 +18,14 @@ Page {
     property alias fileName: header.headerText
 
     property var fileAnnotations: [
-        {"t1": 2000, "t2": 6000, "type": 1},
-        {"t1": 6000, "t2": 9000, "type": 2},
-        {"t1": 12000, "t2": 15000, "type": 1},
-        {"t1": 16000, "t2": 19000, "type": 3}
+        {"t1": 500, "t2": 2300, "type": 1},
+        {"t1": 2300, "t2": 4000, "type": 2},
+        {"t1": 4000, "t2": 7000, "type": 1},
+        {"t1": 7000, "t2": 10800, "type": 2},
+        {"t1": 10800, "t2": 12700, "type": 1},
+        {"t1": 12700, "t2": 14100, "type": 2},
+        {"t1": 14100, "t2": 17300, "type": 1},
+        {"t1": 17300, "t2": 18800, "type": 2},
     ]
 
     property var voiceLabels: []
@@ -145,7 +149,8 @@ Page {
             if (ms < 0) ms = 0
             var wasPlaying = playerController.isPlaying
             playerController.play(ms)
-            if (!wasPlaying) playerController.stop()
+            // Если музыка не играла, ставим на паузу на выбранном моменте, а не сбрасываем
+            if (!wasPlaying) playerController.pause()
         }
 
         Item {
@@ -352,11 +357,11 @@ Page {
 
                 onClicked: {
                     if (playerController.isPlaying) {
-                        playerController.stop()
+                        // Используем паузу вместо полной остановки
+                        playerController.pause()
                     } else {
-                        var startPosMs = ((waveformList.contentX + waveformList.width / 2) / pxPerSecond) * 1000
-                        startPosMs = Math.max(0, startPosMs)
-                        playerController.play(startPosMs)
+                        // Просто возобновляем воспроизведение с текущей позиции ползунка
+                        playerController.play(playerController.position)
                     }
                 }
             }
@@ -411,7 +416,7 @@ Page {
     function getColorForType(typeCode) {
         switch (typeCode) {
             case 1: return "lime"
-            case 2: return "gray"
+            case 2: return "lightsteelblue"
             case 3: return "red"
             default: return Theme.primaryColor
         }

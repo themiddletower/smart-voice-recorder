@@ -64,7 +64,15 @@ void AudioPlayerController::play(quint64 posInMillis)
 
 void AudioPlayerController::stop()
 {
-    m_player.pause();
+    m_player.stop(); // ИСПРАВЛЕНО: теперь stop() действительно останавливает
+    m_isPlaying = false;
+    emit isPlayingChanged();
+}
+
+// ДОБАВЛЕНО: реализация функции паузы
+void AudioPlayerController::pause()
+{
+    m_player.pause(); // Ставим на паузу без сброса позиции
     m_isPlaying = false;
     emit isPlayingChanged();
 }
@@ -125,7 +133,6 @@ quint32 AudioPlayerController::absSampleAsUInt(const unsigned char *p) const
             amp = (m_endian == QAudioFormat::LittleEndian) ? quint32(qAbs(qFromLittleEndian<qint32>(p)))
                                                            : quint32(qAbs(qFromBigEndian<qint32>(p)));
         } else if (m_sampleType == QAudioFormat::Float) {
-            // float [-1..1] -> условно в int диапазон
             amp = quint32(qAbs(*reinterpret_cast<const float *>(p)) * 0x7fffffff);
         }
         return amp;
@@ -144,7 +151,6 @@ void AudioPlayerController::onDecoderBufferReady()
     if (!fmt.isValid())
         return;
 
-    // Инициализация на первом буфере
     if (m_sampleRate == 0) {
         m_sampleRate = fmt.sampleRate();
         m_channels = fmt.channelCount();
@@ -154,26 +160,22 @@ void AudioPlayerController::onDecoderBufferReady()
 
         m_framesPerPoint = qMax(1, m_sampleRate / m_measurementsPerSec);
 
-        // max amplitude для нормализации
         if (m_sampleSize == 8) m_maxAllowedAmplitude = UINT8_MAX;
         else if (m_sampleSize == 16) m_maxAllowedAmplitude = UINT16_MAX;
         else if (m_sampleSize == 32) m_maxAllowedAmplitude = UINT32_MAX;
         else m_maxAllowedAmplitude = 1;
     }
 
-    // Размер сэмпла
     const int bytesPerSample = m_sampleSize / 8;
     if (bytesPerSample <= 0 || m_channels <= 0)
         return;
 
     const unsigned char *ptr = buffer.constData<unsigned char>();
 
-    // Идём по ФРЕЙМАМ (frame = все каналы в один момент времени)
     const int frames = buffer.frameCount();
     for (int f = 0; f < frames; ++f) {
         quint32 peakInFrame = 0;
 
-        // берём максимум по каналам
         for (int ch = 0; ch < m_channels; ++ch) {
             const int sampleIndex = (f * m_channels + ch) * bytesPerSample;
             const unsigned char *sp = ptr + sampleIndex;
@@ -186,9 +188,8 @@ void AudioPlayerController::onDecoderBufferReady()
 
         m_framesAccumulated++;
 
-        // каждые m_framesPerPoint фреймов выдаём одну амплитуду
         if (m_framesAccumulated >= m_framesPerPoint) {
-            qreal level = (qreal)m_peakAccumulated / (qreal)m_maxAllowedAmplitude * 2.0; // "гейн" как у вас
+            qreal level = (qreal)m_peakAccumulated / (qreal)m_maxAllowedAmplitude * 2.0;
             level = qBound<qreal>(s_minimalAmplitude, level, 1.0);
 
             m_tempAmplitudes.append(level);
@@ -204,7 +205,6 @@ void AudioPlayerController::onDecoderFinished()
     m_isDecoding = false;
     emit isDecodingChanged();
 
-    // Подгоняем длину массива амплитуд к duration
     const qint64 durMs = m_player.duration();
     if (durMs > 0) {
         const int expected = qMax(1, int(qCeil((durMs / 1000.0) * m_measurementsPerSec)));
@@ -219,7 +219,6 @@ void AudioPlayerController::onDecoderFinished()
 
         m_timelineModel.fillModel(int(durMs / 60000));
     } else {
-        // fallback по амплитудам
         const qint64 totalMs = qint64((m_tempAmplitudes.size() / double(m_measurementsPerSec)) * 1000.0);
         m_timelineModel.fillModel(int(totalMs / 60000));
     }

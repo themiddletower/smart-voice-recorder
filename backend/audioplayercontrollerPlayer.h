@@ -28,6 +28,7 @@ public:
 
     Q_INVOKABLE void play(quint64 posInMillis = 0);
     Q_INVOKABLE void stop();
+    Q_INVOKABLE void pause();
     Q_INVOKABLE void setSource(QString path);
     Q_INVOKABLE QString pointerPositionToString(qint64 position);
 
