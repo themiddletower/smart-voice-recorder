@@ -13,14 +13,11 @@
 #include <QEventLoop>
 #include <QDataStream>
 
-static bool intervalLess(const SilenceRemoverQt::Interval &a,
-                         const SilenceRemoverQt::Interval &b)
-{
+static bool intervalLess(const SilenceRemoverQt::Interval &a, const SilenceRemoverQt::Interval &b) {
     return a.t1 < b.t1;
 }
 
-QList<SilenceRemoverQt::Interval>
-SilenceRemoverQt::collectAndMergeSilences(const QVariantList &annotations, int silenceType)
+QList<SilenceRemoverQt::Interval> SilenceRemoverQt::collectAndMergeSilences(const QVariantList &annotations, int silenceType)
 {
     QList<Interval> silences;
 
@@ -42,9 +39,7 @@ SilenceRemoverQt::collectAndMergeSilences(const QVariantList &annotations, int s
     return merged;
 }
 
-// Теперь нам не нужно знать общую длительность заранее. Просто берем до бесконечности.
-QList<SilenceRemoverQt::Interval>
-SilenceRemoverQt::buildKeepIntervals(const QList<Interval> &silences)
+QList<SilenceRemoverQt::Interval> SilenceRemoverQt::buildKeepIntervals(const QList<Interval> &silences)
 {
     QList<Interval> keeps;
     qint64 cur = 0;
@@ -52,8 +47,9 @@ SilenceRemoverQt::buildKeepIntervals(const QList<Interval> &silences)
         if (s.t1 > cur) keeps.append({cur, s.t1});
         cur = qMax(cur, s.t2);
     }
-    // Используем максимально возможное значение времени, чтобы забрать всё до конца файла
-    keeps.append({cur, 0x7FFFFFFFFFFFFFFF});
+    // ИСПРАВЛЕНИЕ БАГА: Используем безопасное большое число (100 часов в мс),
+    // чтобы при умножении на 1000 дальше в коде не было переполнения (overflow)
+    keeps.append({cur, 360000000LL});
     return keeps;
 }
 
@@ -68,9 +64,7 @@ qint64 SilenceRemoverQt::removedBefore(const QList<Interval> &silences, qint64 t
     return removed;
 }
 
-QVariantList SilenceRemoverQt::recalcAnnotations(const QVariantList &annotations,
-                                                 const QList<Interval> &silences,
-                                                 int silenceType)
+QVariantList SilenceRemoverQt::recalcAnnotations(const QVariantList &annotations, const QList<Interval> &silences, int silenceType)
 {
     QVariantList out;
     for (const QVariant &v : annotations) {
@@ -93,19 +87,22 @@ QVariantList SilenceRemoverQt::recalcAnnotations(const QVariantList &annotations
     return out;
 }
 
-void SilenceRemoverQt::writeWavHeader(QDataStream &out, quint32 dataSize, int sampleRate, int channels, int sampleSize)
+void SilenceRemoverQt::writeWavHeader(QDataStream &out, quint32 dataSize, int sampleRate, int channels, int sampleSize, QAudioFormat::SampleType sampleType)
 {
     out.writeRawData("RIFF", 4);
-    out << quint32(dataSize + 36); // File size - 8
+    out << quint32(dataSize + 36);
     out.writeRawData("WAVE", 4);
     out.writeRawData("fmt ", 4);
-    out << quint32(16);            // Subchunk1Size (16 for PCM)
-    out << quint16(1);             // AudioFormat (1 = PCM)
+    out << quint32(16);
+
+    quint16 formatCode = (sampleType == QAudioFormat::Float) ? 3 : 1;
+
+    out << quint16(formatCode);
     out << quint16(channels);
     out << quint32(sampleRate);
-    out << quint32(sampleRate * channels * (sampleSize / 8)); // ByteRate
-    out << quint16(channels * (sampleSize / 8));              // BlockAlign
-    out << quint16(sampleSize);                               // BitsPerSample
+    out << quint32(sampleRate * channels * (sampleSize / 8));
+    out << quint16(channels * (sampleSize / 8));
+    out << quint16(sampleSize);
     out.writeRawData("data", 4);
     out << quint32(dataSize);
 }
@@ -118,48 +115,42 @@ bool SilenceRemoverQt::cutAndWriteWav(const QString &inputPath,
     QAudioDecoder decoder;
     decoder.setSourceFilename(inputPath);
 
-    // Настраиваем нужный формат выхода для стандартного WAV
-    QAudioFormat desiredFormat;
-    desiredFormat.setChannelCount(1); // моно
-    desiredFormat.setCodec("audio/pcm");
-    desiredFormat.setSampleType(QAudioFormat::SignedInt);
-    desiredFormat.setSampleRate(44100);
-    desiredFormat.setSampleSize(16);
-    decoder.setAudioFormat(desiredFormat);
-
     QFile outFile(outputWavPath);
     if (!outFile.open(QIODevice::WriteOnly)) {
         if (error) *error = "Cannot open output file";
         return false;
     }
 
-    // Оставляем место под WAV заголовок (44 байта)
     outFile.seek(44);
     quint32 totalDataSize = 0;
+    QAudioFormat actualFormat;
 
     QEventLoop loop;
     bool success = true;
 
-    // Читаем аудио буферы
     QObject::connect(&decoder, &QAudioDecoder::bufferReady, [&]() {
         QAudioBuffer buffer = decoder.read();
+        if (!actualFormat.isValid()) {
+            actualFormat = buffer.format();
+        }
 
-        qint64 bufStartMs = buffer.startTime() / 1000;
-        qint64 bufEndMs = bufStartMs + (buffer.duration() / 1000);
+        qint64 bufStartUs = buffer.startTime();
+        qint64 bufEndUs = bufStartUs + buffer.duration();
 
         for (const auto &k : keeps) {
-            // Если этот буфер полностью за пределами интервала keep — пропускаем
-            if (bufStartMs >= k.t2 || bufEndMs <= k.t1) continue;
+            qint64 kt1_us = k.t1 * 1000LL;
+            qint64 kt2_us = k.t2 * 1000LL;
 
-            // Вычисляем, какая часть буфера нам нужна (с точностью до кадра)
-            qint64 overlapStartMs = qMax(bufStartMs, k.t1);
-            qint64 overlapEndMs = qMin(bufEndMs, k.t2);
+            if (bufStartUs >= kt2_us || bufEndUs <= kt1_us) continue;
+
+            qint64 overlapStartUs = qMax(bufStartUs, kt1_us);
+            qint64 overlapEndUs = qMin(bufEndUs, kt2_us);
 
             int sampleRate = buffer.format().sampleRate();
             int bytesPerFrame = buffer.format().bytesPerFrame();
 
-            qint64 startFrame = (overlapStartMs - bufStartMs) * sampleRate / 1000;
-            qint64 endFrame = (overlapEndMs - bufStartMs) * sampleRate / 1000;
+            qint64 startFrame = (overlapStartUs - bufStartUs) * sampleRate / 1000000LL;
+            qint64 endFrame = (overlapEndUs - bufStartUs) * sampleRate / 1000000LL;
 
             startFrame = qBound(0LL, startFrame, (qint64)buffer.frameCount());
             endFrame = qBound(0LL, endFrame, (qint64)buffer.frameCount());
@@ -185,44 +176,32 @@ bool SilenceRemoverQt::cutAndWriteWav(const QString &inputPath,
         loop.quit();
     });
 
-    // Запускаем процесс декодирования и ждем его завершения
     decoder.start();
     loop.exec();
 
-    // Записываем правильный заголовок WAV файла в начало
-    if (success) {
+    if (success && actualFormat.isValid()) {
         outFile.seek(0);
         QDataStream outStream(&outFile);
-        outStream.setByteOrder(QDataStream::LittleEndian); // WAV требует Little Endian
+        outStream.setByteOrder(QDataStream::LittleEndian);
         writeWavHeader(outStream, totalDataSize,
-                       decoder.audioFormat().sampleRate(),
-                       decoder.audioFormat().channelCount(),
-                       decoder.audioFormat().sampleSize());
+                       actualFormat.sampleRate(),
+                       actualFormat.channelCount(),
+                       actualFormat.sampleSize(),
+                       actualFormat.sampleType());
     }
 
     outFile.close();
-
-    // Если произошла ошибка, удаляем битый файл
     if (!success) QFile::remove(outputWavPath);
 
     return success;
 }
 
-SilenceRemoveResult SilenceRemoverQt::removeSilenceToWav(const QString &inputPath,
-                                                         const QVariantList &annotations,
-                                                         int silenceType,
-                                                         const QString &outputWavPath)
+SilenceRemoveResult SilenceRemoverQt::removeSilenceToWav(const QString &inputPath, const QVariantList &annotations, int silenceType, const QString &outputWavPath)
 {
     SilenceRemoveResult res;
 
-    if (inputPath.isEmpty()) {
-        res.error = "inputPath is empty";
-        return res;
-    }
-    if (!QFile::exists(inputPath)) {
-        res.error = "Input file not found: " + inputPath;
-        return res;
-    }
+    if (inputPath.isEmpty()) { res.error = "inputPath is empty"; return res; }
+    if (!QFile::exists(inputPath)) { res.error = "Input file not found: " + inputPath; return res; }
 
     QDir().mkpath(QFileInfo(outputWavPath).absolutePath());
 

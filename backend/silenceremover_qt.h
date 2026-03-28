@@ -6,6 +6,7 @@
 
 #include <QString>
 #include <QVariantList>
+#include <QAudioFormat> // Добавлено для получения форматов аудио
 
 struct SilenceRemoveResult
 {
@@ -38,7 +39,8 @@ private:
                                const QString &outputWavPath,
                                QString *error);
 
-    static void writeWavHeader(QDataStream &out, quint32 dataSize, int sampleRate, int channels, int sampleSize);
+    // Обновлен метод создания заголовка
+    static void writeWavHeader(QDataStream &out, quint32 dataSize, int sampleRate, int channels, int sampleSize, QAudioFormat::SampleType sampleType);
 };
 
 #endif // SILENCEREMOVER_QT_H
