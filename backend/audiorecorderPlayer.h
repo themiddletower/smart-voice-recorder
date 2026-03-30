@@ -1,5 +1,5 @@
-#ifndef AUDIORECORDER_H
-#define AUDIORECORDER_H
+#ifndef AUDIORECORDERPLAYER_H
+#define AUDIORECORDERPLAYER_H
 
 #include <QObject>
 #include <QAudioRecorder>
@@ -8,14 +8,15 @@
 #include <QAudioBuffer>
 #include <QAudioProbe>
 
-class AudioRecorder : public QObject
+class AudioRecorderRedact : public QObject
 {
     Q_OBJECT
 public:
-    explicit AudioRecorder(QObject *parent = nullptr);
+    explicit AudioRecorderRedact(QObject *parent = nullptr);
     void start();
     void stop();
     void pause();
+
     qreal getCurrentLevel();
     void setRecordSettings(QString codec, QString container);
 
@@ -24,6 +25,7 @@ private:
     QAudioProbe m_probe;
     bool m_isNewRecord;       // сначала bool
     qreal m_currentLevel;     // потом qreal
+
     QString generateFileName();
 
 signals:
@@ -41,4 +43,4 @@ public slots:
     void onRecorderStatusChanged(QMediaRecorder::Status status);
 };
 
-#endif
+#endif // AUDIORECORDERPLAYER_H

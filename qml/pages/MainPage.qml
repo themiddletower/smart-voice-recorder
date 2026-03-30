@@ -35,6 +35,7 @@ Page {
                 anchors.horizontalCenter: parent.horizontalCenter
                 onClicked: pageStack.push(Qt.resolvedUrl("RedactingPage.qml"))
             }
+
         }
     }
 }

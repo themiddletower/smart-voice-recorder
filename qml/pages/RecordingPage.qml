@@ -49,6 +49,7 @@ Page {
                 }
 
             }
+
             Button {
                 text: qsTr("Вернуться на главную страницу")
                 anchors.horizontalCenter: parent.horizontalCenter
