@@ -3,6 +3,7 @@ import Sailfish.Silica 1.0
 import Aurora.Controls 1.0
 import Sailfish.Pickers 1.0
 import ru.auroraos.AudioRecorder 1.0
+import ru.auroraos.AudioAnalyzer 1.0
 import "../components"
 
 Page {
@@ -19,16 +20,7 @@ Page {
 
     property real currentPosMs: 0
 
-    property var fileAnnotations: [
-        {"t1": 500, "t2": 2300, "type": 1},
-        {"t1": 2300, "t2": 4000, "type": 2},
-        {"t1": 4000, "t2": 7000, "type": 1},
-        {"t1": 7000, "t2": 10800, "type": 2},
-        {"t1": 10800, "t2": 12700, "type": 1},
-        {"t1": 12700, "t2": 14100, "type": 2},
-        {"t1": 14100, "t2": 17300, "type": 1},
-        {"t1": 17300, "t2": 18800, "type": 2},
-    ]
+    property var fileAnnotations: []
 
     property var voiceLabels: []
     property var annotationsWithIds: []
@@ -36,6 +28,10 @@ Page {
     property string lastError: ""
 
     SilenceService { id: silenceService }
+
+    AudioAnalyzer {
+        id: audioAnalyzer
+    }
 
     function rebuildVoiceIdsAndTitles() {
         var voiceCounter = 0
@@ -403,6 +399,7 @@ Page {
                 voiceLabels = []
                 rebuildVoiceIdsAndTitles()
                 playerControllerRedact.setSource(selectedPath)
+                fileAnnotations = audioAnalyzer.analyzeFile(selectedPath)
                 pageStack.pop()
             }
         })
