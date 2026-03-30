@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Rename this file as ru.template.smart-voice-recorder.changes.run to let mb2 automatically
+# Rename this file as ru.template.smart.changes.run to let mb2 automatically
 # generate changelog from well formatted Git commit messages and tag
 # annotations.
 

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=ru.template.smart
+Exec=/usr/bin/ru.template.smart
+Name=Template
+Name[ru]=Шаблон
+
+[X-Application]
+Permissions=PushNotifications;Audio;Camera;Documents;Downloads;Internet;Microphone;Music;Pictures;Videos
+OrganizationName=ru.template
+ApplicationName=smart
+ExecDBus=/usr/bin/ru.template.smart

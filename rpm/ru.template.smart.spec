@@ -1,5 +1,5 @@
-Name:       ru.template.smart-voice-recorder
-Summary:    Моё приложение для ОС Аврора
+Name:       ru.template.smart
+Summary:    Моё приложения для ОС Аврора
 Version:    0.1
 Release:    1
 License:    BSD-3-Clause
@@ -19,11 +19,11 @@ BuildRequires:  pkgconfig(Qt5Quick)
 %autosetup
 
 %build
-%cmake -GNinja
-%ninja_build
+%qmake5
+%make_build
 
 %install
-%ninja_install
+%make_install
 
 %files
 %defattr(-,root,root,-)

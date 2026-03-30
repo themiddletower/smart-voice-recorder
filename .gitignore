@@ -1,3 +1,4 @@
+
 .apptool
 .DS_Store
 .mb2
@@ -22,3 +23,47 @@ CMakeLists.txt.user*
 moc_*.cpp
 ru.auroraos.ApplicationTemplate
 build
+
+# Директории сборки Qt Creator / Qt
+debug/
+release/
+*.pro.user
+*.pro.user.*
+*.creator.user
+*.creator
+*.files
+*.includes
+*.config
+*.config.user
+
+# Временные файлы VSCode
+.vscode/
+.vscode/settings.json
+.vscode/c_cpp_properties.json
+.vscode/ipch/
+.vscode/launch.json
+.vscode/tasks.json
+*.code-workspace
+
+
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+.DS_Store
+Thumbs.db
+
+# Файлы Qt Creator
+*.autosave
+*.bak
+*.orig
+
+# Файлы пользовательских настроек
+*.user
+*.user.ini

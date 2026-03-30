@@ -7,9 +7,9 @@ CoverBackground {
     CoverTemplate {
         objectName: "applicationCover"
         primaryText: "App"
-        secondaryText: qsTr("smart voice recorder")
+        secondaryText: qsTr("Template")
         icon {
-            source: Qt.resolvedUrl("../icons/smart-voice-recorder.svg")
+            source: Qt.resolvedUrl("../icons/smart.svg")
             sourceSize { width: icon.width; height: icon.height }
         }
     }
