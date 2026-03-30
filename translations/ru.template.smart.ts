@@ -40,24 +40,67 @@
     </message>
 </context>
 <context>
+    <name>DictaphonePage</name>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="87"/>
+        <source>Слишком тихо, говорите громче</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="89"/>
+        <source>Слишком громко, говорите тише</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="96"/>
+        <source>Диктофон</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="131"/>
+        <source>Уровень громкости</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="278"/>
+        <source>Пауза</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="279"/>
+        <source>Продолжить</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="280"/>
+        <source>Запись</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="310"/>
+        <source>Стоп</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MainPage</name>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="33"/>
+        <location filename="../qml/pages/MainPage.qml" line="18"/>
         <source>Main Page</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="37"/>
+        <location filename="../qml/pages/MainPage.qml" line="22"/>
         <source>Вы сейчас находитесь на главной странице</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="43"/>
+        <location filename="../qml/pages/MainPage.qml" line="28"/>
         <source>Запись на диктофон</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="53"/>
+        <location filename="../qml/pages/MainPage.qml" line="34"/>
         <source>Редактирование записи</source>
         <translation type="unfinished"></translation>
     </message>

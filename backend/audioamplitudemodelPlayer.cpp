@@ -1,22 +1,22 @@
 #include "audioamplitudemodelPlayer.h"
 
-AudioAmplitudeModel::AudioAmplitudeModel(QObject *parent) : QAbstractListModel(parent) {}
+AudioAmplitudeModelRedact::AudioAmplitudeModelRedact(QObject *parent) : QAbstractListModel(parent) {}
 
-AudioAmplitudeModel::~AudioAmplitudeModel() {
+AudioAmplitudeModelRedact::~AudioAmplitudeModelRedact() {
     clear();
 }
 
-int AudioAmplitudeModel::rowCount(const QModelIndex &parent) const
+int AudioAmplitudeModelRedact::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid()) return 0;
     return m_audioAmplitudes.size();
 }
 
-QVariant AudioAmplitudeModel::data(const QModelIndex &index, int role) const
+QVariant AudioAmplitudeModelRedact::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid() || index.row() >= m_audioAmplitudes.size()) return QVariant();
 
-    AudioAmplitude *item = m_audioAmplitudes.at(index.row());
+    AudioAmplitudeRedact *item = m_audioAmplitudes.at(index.row());
     switch (role) {
     case ValueRole: return item->value();
     case IsDefaultValueRole: return item->isDefaultValue();
@@ -25,7 +25,7 @@ QVariant AudioAmplitudeModel::data(const QModelIndex &index, int role) const
     }
 }
 
-QHash<int, QByteArray> AudioAmplitudeModel::roleNames() const
+QHash<int, QByteArray> AudioAmplitudeModelRedact::roleNames() const
 {
     QHash<int, QByteArray> roles;
     roles[ValueRole] = "value";
@@ -34,20 +34,20 @@ QHash<int, QByteArray> AudioAmplitudeModel::roleNames() const
     return roles;
 }
 
-void AudioAmplitudeModel::setAmplitudes(const QList<qreal> &amplitudes)
+void AudioAmplitudeModelRedact::setAmplitudes(const QList<qreal> &amplitudes)
 {
     beginResetModel();
     qDeleteAll(m_audioAmplitudes);
     m_audioAmplitudes.clear();
     for (qreal amp : amplitudes) {
-        AudioAmplitude* item = new AudioAmplitude(amp);
+        AudioAmplitudeRedact* item = new AudioAmplitudeRedact(amp);
         item->setIsDefaultValue(false);
         m_audioAmplitudes.append(item);
     }
     endResetModel();
 }
 
-void AudioAmplitudeModel::clear()
+void AudioAmplitudeModelRedact::clear()
 {
     beginResetModel();
     qDeleteAll(m_audioAmplitudes);
@@ -55,11 +55,11 @@ void AudioAmplitudeModel::clear()
     endResetModel();
 }
 
-void AudioAmplitudeModel::applyAnnotations(const QVariantList &annotations, int measurementsPerSec)
+void AudioAmplitudeModelRedact::applyAnnotations(const QVariantList &annotations, int measurementsPerSec)
 {
     if (m_audioAmplitudes.isEmpty()) return;
 
-    for(auto amp : m_audioAmplitudes) {
+    for (auto amp : m_audioAmplitudes) {
         amp->setAnnotationType(0);
     }
 

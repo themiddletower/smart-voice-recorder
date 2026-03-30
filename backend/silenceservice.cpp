@@ -1,8 +1,5 @@
-// SPDX-FileCopyrightText: 2024 Open Mobile Platform LLC community@omp.ru
-// SPDX-License-Identifier: BSD-3-Clause
-
 #include "silenceservice.h"
-#include "silenceremover_qt.h" // ИЗМЕНЕНО: Подключаем новый класс
+#include "silenceremover_qt.h"
 
 #include <QStandardPaths>
 #include <QDir>
@@ -38,9 +35,8 @@ QVariantMap SilenceService::removeSilence(const QString &inputPath,
 
     const QString outWav = makeOutputWavPath(inputPath);
 
-    // ИЗМЕНЕНО: Используем новый класс SilenceRemoverQt
     SilenceRemoverQt remover;
-    SilenceRemoveResult r = remover.removeSilenceToWav(inputPath, annotations, silenceType, outWav);
+    SilenceRemoveResultQt r = remover.removeSilenceToWav(inputPath, annotations, silenceType, outWav);
 
     if (!r.error.isEmpty()) {
         result["error"] = r.error;

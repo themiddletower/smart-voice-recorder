@@ -17,7 +17,6 @@ Page {
     property string filePath: ""
     property alias fileName: header.headerText
 
-    // Добавлена переменная для моментального отслеживания курсора (без задержек плеера)
     property real currentPosMs: 0
 
     property var fileAnnotations: [
@@ -86,7 +85,7 @@ Page {
     function removeSilenceNow() {
         if (!filePath || filePath === "") return
         lastError = ""
-        playerController.pause()
+        playerControllerRedact.pause()
 
         var r = silenceService.removeSilence(filePath, fileAnnotations, silence_type)
         processCutResult(r)
@@ -95,19 +94,16 @@ Page {
     function deleteSegmentUnderCursor() {
         if (!filePath || filePath === "") return
 
-        // Используем нашу синхронную позицию!
         var pos = currentPosMs
         var targetIndex = -1
 
         for (var i = 0; i < fileAnnotations.length; i++) {
-            // Строго меньше (< t2), чтобы на границе двух отрезков выбирался правильный
             if (pos >= fileAnnotations[i].t1 && pos < fileAnnotations[i].t2) {
                 targetIndex = i
                 break
             }
         }
 
-        // Если кликнули в самый конец последнего сегмента
         if (targetIndex === -1 && fileAnnotations.length > 0) {
             var last = fileAnnotations[fileAnnotations.length - 1]
             if (pos === last.t2) targetIndex = fileAnnotations.length - 1
@@ -119,7 +115,7 @@ Page {
         }
 
         lastError = ""
-        playerController.pause()
+        playerControllerRedact.pause()
 
         var fakeAnnotations = JSON.parse(JSON.stringify(fileAnnotations))
         fakeAnnotations[targetIndex].type = 999
@@ -139,23 +135,18 @@ Page {
 
         for (var i = 0; i < raw.length; i++) {
             var cur = raw[i]
-
-            // Игнорируем куски с нулевой или отрицательной длиной
             if (cur.t1 >= cur.t2) continue
-
-            // ПРОСТО ДОБАВЛЯЕМ (без склеивания соседних фрагментов!)
             clean.push({ "t1": cur.t1, "t2": cur.t2, "type": cur.type })
         }
 
         filePath = r.outputPath
         header.headerText = filePath ? filePath.split('/').pop() : ""
 
-        // Применяем аннотации
         fileAnnotations = clean
         rebuildVoiceIdsAndTitles()
 
-        playerController.setSource(filePath)
-        playerController.audioAmplitudeModel.applyAnnotations(fileAnnotations, measurementsPerSec)
+        playerControllerRedact.setSource(filePath)
+        playerControllerRedact.audioAmplitudeModel.applyAnnotations(fileAnnotations, measurementsPerSec)
     }
 
     function seekToNextSegment() {
@@ -186,20 +177,19 @@ Page {
     }
 
     Component.onCompleted: {
-        playerController.isPlayerPage = true
+        playerControllerRedact.isPlayerPage = true
         rebuildVoiceIdsAndTitles()
     }
 
     onFileAnnotationsChanged: rebuildVoiceIdsAndTitles()
 
     Connections {
-        target: playerController
+        target: playerControllerRedact
         onDecodingCompleted: {
-            playerController.audioAmplitudeModel.applyAnnotations(fileAnnotations, measurementsPerSec)
+            playerControllerRedact.audioAmplitudeModel.applyAnnotations(fileAnnotations, measurementsPerSec)
         }
         onPositionChanged: {
-            // Синхронизируем нашу переменную с плеером, когда он сам играет
-            currentPosMs = playerController.position
+            currentPosMs = playerControllerRedact.position
         }
     }
 
@@ -219,17 +209,17 @@ Page {
 
         function seekToMs(ms) {
             if (ms < 0) ms = 0
-            currentPosMs = ms // Моментально обновляем позицию, чтобы удаление работало сразу!
+            currentPosMs = ms
 
-            var wasPlaying = playerController.isPlaying
-            playerController.play(ms)
-            if (!wasPlaying) playerController.pause()
+            var wasPlaying = playerControllerRedact.isPlaying
+            playerControllerRedact.play(ms)
+            if (!wasPlaying) playerControllerRedact.pause()
         }
 
         Item {
             id: waveformContainer
             anchors { left: parent.left; right: parent.right; top: parent.top; bottom: timePassed.top; margins: Theme.paddingLarge }
-            visible: filePath !== "" && !playerController.isDecoding
+            visible: filePath !== "" && !playerControllerRedact.isDecoding
             clip: true
 
             Item {
@@ -296,15 +286,15 @@ Page {
                 id: waveformList
                 anchors.fill: parent
                 orientation: ListView.Horizontal
-                model: playerController.audioAmplitudeModel
+                model: playerControllerRedact.audioAmplitudeModel
                 boundsBehavior: Flickable.StopAtBounds
                 z: 0
 
                 Connections {
-                    target: playerController
+                    target: playerControllerRedact
                     onPositionChanged: {
-                        if (!playerController.isPlaying) return
-                        var xTime = (playerController.position / 1000.0) * pxPerSecond
+                        if (!playerControllerRedact.isPlaying) return
+                        var xTime = (playerControllerRedact.position / 1000.0) * pxPerSecond
                         var targetContentX = xTime - waveformList.width / 2
                         var maxX = Math.max(0, waveformList.contentWidth - waveformList.width)
 
@@ -346,14 +336,14 @@ Page {
             }
         }
 
-        BusyIndicator { anchors.centerIn: waveformContainer; size: BusyIndicatorSize.Large; running: playerController.isDecoding; visible: playerController.isDecoding }
+        BusyIndicator { anchors.centerIn: waveformContainer; size: BusyIndicatorSize.Large; running: playerControllerRedact.isDecoding; visible: playerControllerRedact.isDecoding }
 
         Label {
             id: timePassed
             anchors { bottom: controlsRow.top; horizontalCenter: parent.horizontalCenter; margins: Theme.horizontalPageMargin }
-            text: playerController.pointerPositionToString(currentPosMs)
+            text: playerControllerRedact.pointerPositionToString(currentPosMs)
             font.pixelSize: Theme.fontSizeMedium * 2
-            visible: filePath !== "" && !playerController.isDecoding
+            visible: filePath !== "" && !playerControllerRedact.isDecoding
         }
 
         Row {
@@ -361,26 +351,26 @@ Page {
             spacing: Theme.paddingLarge
             anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; margins: Theme.paddingLarge }
 
-            IconButton { icon.source: "image://theme/icon-m-clear"; enabled: filePath !== "" && !playerController.isDecoding; onClicked: deleteSegmentUnderCursor() }
-            IconButton { icon.source: "image://theme/icon-m-previous"; enabled: filePath !== "" && !playerController.isDecoding; onClicked: seekToPrevSegment() }
+            IconButton { icon.source: "image://theme/icon-m-clear"; enabled: filePath !== "" && !playerControllerRedact.isDecoding; onClicked: deleteSegmentUnderCursor() }
+            IconButton { icon.source: "image://theme/icon-m-previous"; enabled: filePath !== "" && !playerControllerRedact.isDecoding; onClicked: seekToPrevSegment() }
 
             IconButton {
                 icon {
-                    source: playerController.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-simple-play"
+                    source: playerControllerRedact.isPlaying ? "image://theme/icon-m-pause" : "image://theme/icon-m-simple-play"
                     width: Theme.iconSizeLarge
                     height: Theme.iconSizeLarge
                 }
                 height: icon.height
                 width: icon.width
-                enabled: playerController.isPlaybackAvailable && filePath !== "" && !playerController.isDecoding
+                enabled: playerControllerRedact.isPlaybackAvailable && filePath !== "" && !playerControllerRedact.isDecoding
                 onClicked: {
-                    if (playerController.isPlaying) playerController.pause()
-                    else playerController.play(currentPosMs)
+                    if (playerControllerRedact.isPlaying) playerControllerRedact.pause()
+                    else playerControllerRedact.play(currentPosMs)
                 }
             }
 
-            IconButton { icon.source: "image://theme/icon-m-next"; enabled: filePath !== "" && !playerController.isDecoding; onClicked: seekToNextSegment() }
-            IconButton { icon.source: "image://theme/icon-m-delete"; enabled: filePath !== "" && !playerController.isDecoding; onClicked: removeSilenceNow() }
+            IconButton { icon.source: "image://theme/icon-m-next"; enabled: filePath !== "" && !playerControllerRedact.isDecoding; onClicked: seekToNextSegment() }
+            IconButton { icon.source: "image://theme/icon-m-delete"; enabled: filePath !== "" && !playerControllerRedact.isDecoding; onClicked: removeSilenceNow() }
         }
 
         Label {
@@ -412,7 +402,7 @@ Page {
                 lastError = ""
                 voiceLabels = []
                 rebuildVoiceIdsAndTitles()
-                playerController.setSource(selectedPath)
+                playerControllerRedact.setSource(selectedPath)
                 pageStack.pop()
             }
         })

@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2024 Open Mobile Platform LLC community@omp.ru
-// SPDX-License-Identifier: BSD-3-Clause
-
 #include "silenceremover.h"
 
 #include <QProcess>
@@ -42,13 +39,11 @@ bool SilenceRemover::ensureFfmpegAvailable(QString *error)
     int code = 0;
     QString out, err;
 
-    // ffmpeg
     if (!runProcess("ffmpeg", { "-version" }, &code, &out, &err) || code != 0) {
         if (error) *error = "ffmpeg is not available: " + (err.isEmpty() ? out : err);
         return false;
     }
 
-    // ffprobe
     if (!runProcess("ffprobe", { "-version" }, &code, &out, &err) || code != 0) {
         if (error) *error = "ffprobe is not available: " + (err.isEmpty() ? out : err);
         return false;
@@ -131,7 +126,6 @@ qint64 SilenceRemover::probeDurationMs(const QString &inputPath, QString *error)
     int code = 0;
     QString out, err;
 
-    // ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 input
     const QStringList args{
         "-v", "error",
         "-show_entries", "format=duration",
@@ -164,7 +158,6 @@ QString SilenceRemover::buildFfmpegFilterKeepIntervals(const QList<Interval> &si
         return {};
     }
 
-    // Build keep intervals [0..sil1.t1], [sil1.t2..sil2.t1], ..., [last.t2..duration]
     QList<Interval> keeps;
     qint64 cur = 0;
     for (const auto &s : silences) {
@@ -180,7 +173,6 @@ QString SilenceRemover::buildFfmpegFilterKeepIntervals(const QList<Interval> &si
         return {};
     }
 
-    // Build filter_complex with atrim + concat
     QString filter;
     QStringList labels;
 
@@ -203,12 +195,12 @@ QString SilenceRemover::buildFfmpegFilterKeepIntervals(const QList<Interval> &si
     return filter;
 }
 
-SilenceRemoveResult SilenceRemover::removeSilence(const QString &inputPath,
-                                                  const QVariantList &annotations,
-                                                  int silenceType,
-                                                  const QString &outputPath)
+SilenceRemoveResultFfmpeg SilenceRemover::removeSilence(const QString &inputPath,
+                                                        const QVariantList &annotations,
+                                                        int silenceType,
+                                                        const QString &outputPath)
 {
-    SilenceRemoveResult res;
+    SilenceRemoveResultFfmpeg res;
 
     if (inputPath.isEmpty()) {
         res.error = "inputPath is empty";
@@ -246,11 +238,9 @@ SilenceRemoveResult SilenceRemover::removeSilence(const QString &inputPath,
         return res;
     }
 
-    // Ensure output dir exists
     QFileInfo ofi(outputPath);
     QDir().mkpath(ofi.absolutePath());
 
-    // Run ffmpeg
     int code = 0;
     QString out, err;
     const QStringList args{
@@ -274,4 +264,3 @@ SilenceRemoveResult SilenceRemover::removeSilence(const QString &inputPath,
     res.outputPath = outputPath;
     return res;
 }
-

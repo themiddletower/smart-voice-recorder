@@ -1,15 +1,12 @@
-// SPDX-FileCopyrightText: 2024 Open Mobile Platform LLC community@omp.ru
-// SPDX-License-Identifier: BSD-3-Clause
-
 #ifndef AUDIOAMPLITUDEPLAYER_H
 #define AUDIOAMPLITUDEPLAYER_H
 
 #include <QObject>
 
-class AudioAmplitude
+class AudioAmplitudeRedact
 {
 public:
-    AudioAmplitude(qreal value, int annotationType = 0);
+    AudioAmplitudeRedact(qreal value = 0.05, int annotationType = 0);
 
     qreal value() const;
     void setValue(qreal newValue);
@@ -23,7 +20,7 @@ public:
 private:
     qreal m_value;
     bool m_isDefaultValue;
-    int m_annotationType; // 0 - default, 1 - voice, 2 - silence, 3 - noise
+    int m_annotationType;
 };
 
 #endif // AUDIOAMPLITUDEPLAYER_H

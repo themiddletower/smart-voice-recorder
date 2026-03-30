@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2024 Open Mobile Platform LLC community@omp.ru
-// SPDX-License-Identifier: BSD-3-Clause
-
 #include "silenceremover_qt.h"
 
 #include <QVariantMap>
@@ -13,7 +10,7 @@
 #include <QEventLoop>
 #include <QDataStream>
 
-static bool intervalLess(const SilenceRemoverQt::Interval &a, const SilenceRemoverQt::Interval &b) {
+static bool intervalLessQt(const SilenceRemoverQt::Interval &a, const SilenceRemoverQt::Interval &b) {
     return a.t1 < b.t1;
 }
 
@@ -29,7 +26,7 @@ QList<SilenceRemoverQt::Interval> SilenceRemoverQt::collectAndMergeSilences(cons
         if (in.t2 > in.t1) silences.append(in);
     }
 
-    std::sort(silences.begin(), silences.end(), intervalLess);
+    std::sort(silences.begin(), silences.end(), intervalLessQt);
 
     QList<Interval> merged;
     for (const auto &s : silences) {
@@ -47,8 +44,6 @@ QList<SilenceRemoverQt::Interval> SilenceRemoverQt::buildKeepIntervals(const QLi
         if (s.t1 > cur) keeps.append({cur, s.t1});
         cur = qMax(cur, s.t2);
     }
-    // ИСПРАВЛЕНИЕ БАГА: Используем безопасное большое число (100 часов в мс),
-    // чтобы при умножении на 1000 дальше в коде не было переполнения (overflow)
     keeps.append({cur, 360000000LL});
     return keeps;
 }
@@ -167,6 +162,7 @@ bool SilenceRemoverQt::cutAndWriteWav(const QString &inputPath,
     });
 
     QObject::connect(&decoder, static_cast<void(QAudioDecoder::*)(QAudioDecoder::Error)>(&QAudioDecoder::error), [&](QAudioDecoder::Error err) {
+        Q_UNUSED(err)
         if (error) *error = "Decoder error: " + decoder.errorString();
         success = false;
         loop.quit();
@@ -196,9 +192,9 @@ bool SilenceRemoverQt::cutAndWriteWav(const QString &inputPath,
     return success;
 }
 
-SilenceRemoveResult SilenceRemoverQt::removeSilenceToWav(const QString &inputPath, const QVariantList &annotations, int silenceType, const QString &outputWavPath)
+SilenceRemoveResultQt SilenceRemoverQt::removeSilenceToWav(const QString &inputPath, const QVariantList &annotations, int silenceType, const QString &outputWavPath)
 {
-    SilenceRemoveResult res;
+    SilenceRemoveResultQt res;
 
     if (inputPath.isEmpty()) { res.error = "inputPath is empty"; return res; }
     if (!QFile::exists(inputPath)) { res.error = "Input file not found: " + inputPath; return res; }

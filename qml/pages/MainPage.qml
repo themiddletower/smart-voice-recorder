@@ -5,21 +5,6 @@ Page {
     objectName: "mainPage"
     allowedOrientations: Orientation.All
 
-    /*
-    PageHeader {
-        objectName: "pageHeader"
-        title: qsTr("Template")
-        extraContent.children: [
-            IconButton {
-                objectName: "aboutButton"
-                icon.source: "image://theme/icon-m-about"
-                anchors.verticalCenter: parent.verticalCenter
-
-                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
-            }
-        ]
-    }
-    */
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: layout.height + Theme.paddingLarge
@@ -42,11 +27,7 @@ Page {
             Button {
                 text: qsTr("Запись на диктофон")
                 anchors.horizontalCenter: parent.horizontalCenter
-                onClicked: {//pageStack.push(Qt.resolvedUrl("RecordingPage.qml"))
-                    var component = Qt.resolvedUrl("RecordingPage.qml")
-                    console.log("Loading page from:", component)
-                    pageStack.push(component)
-                }
+                onClicked: pageStack.push(Qt.resolvedUrl("DictaphonePage.qml"))
             }
 
             Button {
