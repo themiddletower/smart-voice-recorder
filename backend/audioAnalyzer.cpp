@@ -3,7 +3,6 @@
 #include <cmath>
 #include <vector>
 #include <QUrl>
-#include <QDebug>
 #include <QVariantMap>
 
 // Структура для промежуточного анализа кадров
@@ -64,8 +63,8 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     if (rmsValues.empty()) return result;
 
     // --- Пороговая классификация ---
-    const double speechThreshold = 1200.0;
-    const double loudThreshold   = 6000.0;
+    const double speechThreshold = 800.0;
+    const double loudThreshold   = 4000.0;
 
     std::vector<int> labels;
     labels.reserve(rmsValues.size());
