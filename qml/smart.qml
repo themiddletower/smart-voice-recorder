@@ -12,4 +12,5 @@ ApplicationWindow {
     AudioPlayerController {
         id: playerController
     }
+
 }
