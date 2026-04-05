@@ -9,6 +9,7 @@ PKGCONFIG += \
 
 SOURCES += \
     backend/amplitudemodelfillerPlayer.cpp \
+    backend/audioAnalyzer.cpp \
     backend/audioamplitudePlayer.cpp \
     backend/audioamplitudemodel.cpp \
     backend/audioamplitudemodelPlayer.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
     backend/silenceremover.cpp \
     backend/silenceremover_qt.cpp \
     backend/silenceservice.cpp \
+    backend/smartDenoiseWavSoft.cpp \
     backend/timelineblockPlayer.cpp \
     backend/timelinemodel.cpp \
     backend/timelinemodelPlayer.cpp \
@@ -30,6 +32,7 @@ SOURCES += \
 
 HEADERS += \
     backend/amplitudemodelfillerPlayer.h \
+    backend/audioAnalyzer.h \
     backend/audioamplitudePlayer.h \
     backend/audioamplitudemodel.h \
     backend/audioamplitudemodelPlayer.h \
@@ -44,6 +47,7 @@ HEADERS += \
     backend/silenceremover.h \
     backend/silenceremover_qt.h \
     backend/silenceservice.h \
+    backend/smartDenoiseWavSoft.h \
     backend/timelineblockPlayer.h \
     backend/timelinemodel.h \
     backend/timelinemodelPlayer.h

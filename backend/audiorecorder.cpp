@@ -2,6 +2,7 @@
 #include <QStandardPaths>
 #include <qendian.h>
 
+#include "smartDenoiseWavSoft.h"
 #include "audiorecorder.h"
 #include "audiobufferextension.h"
 
@@ -14,6 +15,8 @@ AudioRecorder::AudioRecorder(QObject *parent) : QObject(parent), m_isNewRecord(t
             this, &AudioRecorder::onRecordError);
     connect(&m_audioRecorder, &QAudioRecorder::statusChanged, this,
             &AudioRecorder::onRecorderStatusChanged);
+    connect(&m_audioRecorder, &QAudioRecorder::stateChanged,
+            this, &AudioRecorder::onRecorderStateChanged);
 }
 
 QString AudioRecorder::generateFileName()
@@ -31,6 +34,7 @@ void AudioRecorder::start()
                 .arg(QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
                      generateFileName(), m_audioRecorder.containerFormat());
         m_audioRecorder.setOutputLocation(QUrl(audiofilePath));
+        m_lastFilePath = audiofilePath;
         emit audiofilePathChanged(audiofilePath);
     }
     m_audioRecorder.record();
@@ -85,3 +89,23 @@ void AudioRecorder::onRecorderStatusChanged(QMediaRecorder::Status status)
     else if (status == QAudioRecorder::FinalizingStatus)
         emit recordStopped();
 }
+
+void AudioRecorder::onRecorderStateChanged(QMediaRecorder::State state)
+{
+    if (state == QMediaRecorder::StoppedState) {
+        qDebug() << "Recorder fully stopped. Safe to process file.";
+
+        QString outputPath = m_lastFilePath;
+        outputPath.replace(".wav", "_denoised.wav");
+
+        bool ok = applyDenoiseOnly(m_lastFilePath, outputPath);
+        if (ok) {
+            qDebug() << "Denoised file saved:" << outputPath;
+        } else {
+            qDebug() << "Denoise failed";
+        }
+
+        emit recordStopped();
+    }
+}
+

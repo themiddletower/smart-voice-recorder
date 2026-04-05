@@ -18,6 +18,7 @@ public:
     void pause();
     qreal getCurrentLevel();
     void setRecordSettings(QString codec, QString container);
+    QString m_lastFilePath;
 
 private:
     QAudioRecorder m_audioRecorder;
@@ -39,6 +40,7 @@ public slots:
     void onRecordError(QMediaRecorder::Error errorMsg);
     void onProbeRecieved(QAudioBuffer buffer);
     void onRecorderStatusChanged(QMediaRecorder::Status status);
+    void onRecorderStateChanged(QMediaRecorder::State state);
 };
 
 #endif
