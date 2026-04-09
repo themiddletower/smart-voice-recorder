@@ -85,23 +85,23 @@
 <context>
     <name>MainPage</name>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="18"/>
-        <source>Main Page</source>
+        <location filename="../qml/pages/MainPage.qml" line="39"/>
+        <source>Главная</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="22"/>
-        <source>Вы сейчас находитесь на главной странице</source>
+        <location filename="../qml/pages/MainPage.qml" line="55"/>
+        <source>Начать запись</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="28"/>
-        <source>Запись на диктофон</source>
+        <location filename="../qml/pages/MainPage.qml" line="69"/>
+        <source>Редактирование</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="34"/>
-        <source>Редактирование записи</source>
+        <location filename="../qml/pages/MainPage.qml" line="87"/>
+        <source>Приложение для работы со звуком</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
