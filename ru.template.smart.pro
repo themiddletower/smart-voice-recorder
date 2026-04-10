@@ -8,6 +8,7 @@ QT += core network qml gui quick multimedia
 PKGCONFIG += \
 
 SOURCES += \
+    backend/ApiService.cpp \
     backend/amplitudemodelfillerPlayer.cpp \
     backend/audioAnalyzer.cpp \
     backend/audioamplitudePlayer.cpp \
@@ -31,6 +32,7 @@ SOURCES += \
     src/main.cpp \
 
 HEADERS += \
+    backend/ApiService.h \
     backend/amplitudemodelfillerPlayer.h \
     backend/audioAnalyzer.h \
     backend/audioamplitudePlayer.h \

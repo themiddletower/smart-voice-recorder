@@ -227,6 +227,14 @@ Page {
         id: header
         headerText: filePath ? filePath.split('/').pop() : "Выберите аудиофайл"
 
+        IconButton {
+            icon.source: "image://theme/icon-m-cloud-upload"
+            onClicked: pageStack.push(Qt.resolvedUrl("CloudStoragePage.qml"), {
+                "currentLocalFile": page.filePath,
+                "currentAnnotations": JSON.stringify(page.fileAnnotations)
+            })
+        }
+
         Row {
             anchors.right: parent.right
             anchors.rightMargin: Theme.paddingMedium
