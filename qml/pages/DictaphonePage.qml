@@ -1,316 +1,410 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import ru.auroraos.AudioRecorder 1.0
-import "../components"
 
 Page {
+    id: page
     objectName: "dictaphonePage"
     allowedOrientations: Orientation.Portrait
 
+    // ─── Пороги уровня громкости ───
     readonly property real lowThreshold: 0.1
     readonly property real highThreshold: 0.85
 
+    // ─── Состояние ───
     property string currentRecordPath: ""
-    property real currentLevel: 0.0
-    property bool isRecording: false
-    property bool isPaused: false
-    property bool isReady: false
+    property real   currentLevel: 0.0
+    property bool   isRecording: false
+    property bool   isPaused: false
+    property bool   isReady: false
     property string volumeWarning: ""
+    property string lastError: ""
+    property int    recordingDurationMs: 0
+
+    // ─── Параметры волны (из RecordTrack) ───
+    readonly property int measurementsPerHalfSec: 8
+    readonly property int timelineBlockWidth: Theme.itemSizeSmall / 2
+    readonly property int millisInHalfSec: 500
+
+    // Позиция указателя (для скроллинга в паузе)
+    property real durationOnPointer:
+        (waveformList.contentX + waveformContainer.width / 2)
+        * millisInHalfSec / timelineBlockWidth
 
     onStatusChanged: {
         if (status === PageStatus.Activating)
             playerController.isPlayerPage = false
     }
 
+    // ─── Форматирование HH:MM:SS ───
+    function formatDuration(ms) {
+        var h = Math.floor(ms / 3600000)
+        var m = Math.floor((ms % 3600000) / 60000)
+        var s = Math.floor((ms % 60000) / 1000)
+        return (h < 10 ? "0" : "") + h + ":"
+             + (m < 10 ? "0" : "") + m + ":"
+             + (s < 10 ? "0" : "") + s
+    }
+
+    function updateVolumeWarning(level) {
+        if (level < lowThreshold)
+            volumeWarning = qsTr("Говорите громче!")
+        else if (level > highThreshold)
+            volumeWarning = qsTr("Говорите тише!")
+        else
+            volumeWarning = ""
+    }
+
+    function moveWaveformTo(ms) {
+        waveformList.contentX =
+            ms / millisInHalfSec * timelineBlockWidth
+            - waveformContainer.width / 2
+    }
+
+    function resetWaveform() {
+        waveformList.positionViewAtBeginning()
+        playerController.resetModels()
+    }
+
+    // ─── Контроллер записи ───
     AudioRecorderController {
         id: audioRecorder
 
         onAudioDurationChanged: {
             var level = getAudioLevel()
             currentLevel = level
-            recordTrack.newRecorderDataRecieved(duration, level)
+            recordingDurationMs = duration
+            moveWaveformTo(duration)
+            if (waveformList.atXEnd)
+                playerController.updateModelWithRecorderData(duration, level)
             updateVolumeWarning(level)
         }
 
         onRecordStarted: {
-            console.log("Record started!")
             isRecording = true
             isPaused = false
             playerController.isPlaybackAvailable = false
-            recordTrack.isFlickable = false
         }
 
         onRecordPaused: {
-            console.log("Record paused!")
             isPaused = true
             isRecording = false
             playerController.setSource(currentRecordPath)
-            recordTrack.isFlickable = true
         }
 
         onRecordStopped: {
-            console.log("Record stopped!")
             isRecording = false
             isPaused = false
             playerController.stop()
-            recordTrack.reset()
+            resetWaveform()
             volumeWarning = ""
             currentLevel = 0.0
+            recordingDurationMs = 0
         }
 
-        onAudiofilePathChanged: {
-            console.log("File path: " + path)
-            currentRecordPath = path
-        }
+        onAudiofilePathChanged: { currentRecordPath = path }
+        onRecorderPrepared:     { isReady = true }
+        onRecordErrorOccured:   { lastError = error }
 
-        onRecorderPrepared: {
-            console.log("Recorder prepared!")
-            isReady = true
-        }
+        Component.onCompleted: setDefaultRecordSettings()
+    }
 
-        onRecordErrorOccured: {
-            console.log("Record error: " + error)
-            errorMsg.visible = true
-            errorMsg.text = error
-            buttonRow.visible = false
-        }
-
-        Component.onCompleted: {
-            console.log("Setting default record settings...")
-            setDefaultRecordSettings()
-            console.log("Default settings applied")
+    // Автоскролл волны при воспроизведении
+    Connections {
+        target: playerController
+        onPositionChanged: {
+            if (position > 0) moveWaveformTo(position)
         }
     }
 
-    function updateVolumeWarning(level) {
-        if (level < lowThreshold)
-            volumeWarning = qsTr("Слишком тихо, говорите громче")
-        else if (level > highThreshold)
-            volumeWarning = qsTr("Слишком громко, говорите тише")
-        else
-            volumeWarning = ""
+    // ═══════════════════════════════════════════
+    //                   ВИЗУАЛ
+    // ═══════════════════════════════════════════
+
+    // Тёмный фон страницы
+    Rectangle {
+        anchors.fill: parent
+        color: "#0F1219"
     }
 
-    PageHeader {
-        id: pageHeader
-        title: qsTr("Диктофон")
-    }
-
+    // ── Шапка: Отмена / Новая запись / Готово ──
     Item {
-        id: pageRoot
-        anchors {
-            left: parent.left
-            right: parent.right
-            top: pageHeader.bottom
-            bottom: parent.bottom
-        }
+        id: headerArea
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        height: 110
 
-        RecordTrack {
-            id: recordTrack
-            anchors {
-                left: parent.left
-                right: parent.right
-                top: parent.top
-                bottom: volumeColumn.top
-                topMargin: Theme.paddingLarge
-                bottomMargin: Theme.paddingMedium
-            }
-        }
-
-        Column {
-            id: volumeColumn
-            anchors {
-                left: parent.left
-                right: parent.right
-                bottom: warningLabel.top
-                margins: Theme.horizontalPageMargin
-            }
-            spacing: Theme.paddingSmall
-
-            Label {
-                text: qsTr("Уровень громкости")
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.secondaryColor
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-
-            Item {
-                width: parent.width
-                height: Theme.itemSizeExtraSmall / 2
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: Theme.rgba(Theme.highlightColor, 0.2)
-                }
-
-                Rectangle {
-                    anchors {
-                        left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                    }
-                    width: parent.width * currentLevel
-                    radius: height / 2
-                    color: {
-                        if (currentLevel < lowThreshold)
-                            return "#4CAF50"
-                        else if (currentLevel > highThreshold)
-                            return "#F44336"
-                        else
-                            return "#2196F3"
-                    }
-
-                    Behavior on width {
-                        NumberAnimation { duration: 50; easing.type: Easing.OutQuad }
-                    }
-                    Behavior on color {
-                        ColorAnimation { duration: 200 }
-                    }
-                }
-
-                Rectangle {
-                    x: parent.width * lowThreshold
-                    anchors { top: parent.top; bottom: parent.bottom }
-                    width: 1
-                    color: Theme.rgba("white", 0.3)
-                }
-                Rectangle {
-                    x: parent.width * highThreshold
-                    anchors { top: parent.top; bottom: parent.bottom }
-                    width: 1
-                    color: Theme.rgba("white", 0.3)
-                }
-            }
-
-            Label {
-                text: Math.round(currentLevel * 100) + "%"
-                font.pixelSize: Theme.fontSizeSmall
-                color: Theme.highlightColor
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
-        }
-
+        // Отмена
         Label {
-            id: warningLabel
             anchors {
-                left: parent.left
-                right: parent.right
-                bottom: timePassed.top
-                margins: Theme.horizontalPageMargin
+                left: parent.left; leftMargin: Theme.horizontalPageMargin
+                top: parent.top;   topMargin: 60
             }
-            horizontalAlignment: Text.AlignHCenter
-            text: volumeWarning
-            visible: volumeWarning.length > 0
+            text: qsTr("Отмена")
+            color: "white"
             font.pixelSize: Theme.fontSizeMedium
-            font.bold: true
-            wrapMode: Text.WordWrap
-            color: currentLevel < lowThreshold ? "#FFC107" : "#F44336"
 
-            SequentialAnimation on opacity {
-                running: volumeWarning.length > 0
-                loops: Animation.Infinite
-                NumberAnimation { to: 0.4; duration: 500 }
-                NumberAnimation { to: 1.0; duration: 500 }
+            MouseArea {
+                anchors.fill: parent; anchors.margins: -Theme.paddingSmall
+                onClicked: {
+                    if (isRecording || isPaused) audioRecorder.stopRecord()
+                    pageStack.pop()
+                }
             }
         }
 
+        // Готово
         Label {
-            id: errorMsg
-            wrapMode: Text.Wrap
             anchors {
-                bottom: timePassed.top
-                horizontalCenter: pageRoot.horizontalCenter
-                margins: Theme.horizontalPageMargin
+                right: parent.right; rightMargin: Theme.horizontalPageMargin
+                top: parent.top;     topMargin: 60
             }
-            visible: false
-            color: "#F44336"
+            text: qsTr("Готово")
+            color: "white"
+            font.pixelSize: Theme.fontSizeMedium
+            visible: isRecording || isPaused
+
+            MouseArea {
+                anchors.fill: parent; anchors.margins: -Theme.paddingSmall
+                onClicked: {
+                    audioRecorder.stopRecord()
+                    pageStack.pop() // Если нужно выходить на предыдущий экран по "Готово"
+                }
+            }
         }
 
+        // Заголовок
         Label {
-            id: timePassed
-            anchors {
-                bottom: buttonRow.top
-                horizontalCenter: pageRoot.horizontalCenter
-                margins: Theme.horizontalPageMargin
-            }
-            text: recordTrack.timeString
-            font.pixelSize: Theme.fontSizeMedium * 2
-            color: isRecording ? Theme.highlightColor : Theme.primaryColor
-        }
-
-        Row {
-            id: buttonRow
             anchors {
                 horizontalCenter: parent.horizontalCenter
-                bottom: parent.bottom
-                margins: Theme.horizontalPageMargin
+                top: parent.top; topMargin: 98
             }
-            height: Theme.iconSizeExtraLarge + recordLabel.height + Theme.paddingSmall
-            spacing: Theme.itemSizeSmall
+            text: qsTr("Новая запись")
+            color: "#FFF9F9"
+            font { pixelSize: 20; bold: true }
+        }
+    }
 
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.paddingSmall
+    // ── Таймер ──
+    Label {
+        id: timerLabel
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            top: headerArea.bottom; topMargin: 20
+        }
+        text: {
+            if (isRecording) return formatDuration(recordingDurationMs)
+            if (isPaused)    return formatDuration(durationOnPointer)
+            return "00:00:00"
+        }
+        color: "white"
+        font { pixelSize: 48; bold: true }
+    }
 
-                IconButton {
-                    id: recordButton
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    icon {
-                        source: isRecording
-                            ? "image://theme/icon-l-opaque-pause"
-                            : "image://theme/icon-m-call-recording-on-dark"
-                        width: Theme.iconSizeExtraLarge
-                        height: Theme.iconSizeExtraLarge
-                    }
-                    width: Theme.iconSizeExtraLarge
-                    height: Theme.iconSizeExtraLarge
-                    enabled: isReady
-                    onClicked: {
-                        console.log("Record button clicked!")
-                        audioRecorder.startRecord()
-                    }
-                }
+    // ── Контейнер волны ──
+    Rectangle {
+        id: waveformContainer
+        anchors {
+            left: parent.left;  right: parent.right
+            top: timerLabel.bottom
+            leftMargin: 16; rightMargin: 16; topMargin: Theme.paddingLarge
+        }
+        height: 100
+        radius: 16
+        clip: true
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#2A2F3F" }
+            GradientStop { position: 1.0; color: "#1A1E2A" }
+        }
 
-                Label {
-                    id: recordLabel
-                    text: {
-                        if (isRecording) return qsTr("Пауза")
-                        else if (isPaused) return qsTr("Продолжить")
-                        else return qsTr("Запись")
+        ListView {
+            id: waveformList
+            anchors.fill: parent
+            orientation: ListView.Horizontal
+            interactive: isPaused
+            boundsBehavior: Flickable.StopAtBounds
+            model: playerController.audioAmplitudeModel
+
+            property bool isDragPause: false
+
+            header: Item { width: waveformContainer.width / 2 }
+            footer: Item { width: waveformContainer.width / 2 }
+
+            delegate: Item {
+                width: timelineBlockWidth / measurementsPerHalfSec
+                height: waveformList.height
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 4
+                    height: Math.max(4, parent.height * 0.85 * value)
+                    radius: 2
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#4CAF50" }
+                        GradientStop { position: 1.0; color: "#5CAF91" }
                     }
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
-                    anchors.horizontalCenter: parent.horizontalCenter
                 }
             }
 
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.paddingSmall
-                visible: isRecording || isPaused
-
-                IconButton {
-                    id: stopButton
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    icon {
-                        source: "image://theme/icon-m-stop"
-                        width: Theme.iconSizeMedium
-                        height: Theme.iconSizeMedium
-                    }
-                    width: Theme.iconSizeLarge
-                    height: Theme.iconSizeLarge
-                    onClicked: {
-                        console.log("Stop button clicked!")
-                        audioRecorder.stopRecord()
-                    }
+            onDragStarted: {
+                if (playerController.isPlaying) {
+                    playerController.stop()
+                    isDragPause = true
                 }
+            }
+            onDragEnded: {
+                if (isDragPause) {
+                    playerController.play(durationOnPointer)
+                    isDragPause = false
+                }
+            }
+        }
 
-                Label {
-                    text: qsTr("Стоп")
-                    font.pixelSize: Theme.fontSizeExtraSmall
-                    color: Theme.secondaryColor
-                    anchors.horizontalCenter: parent.horizontalCenter
+        // Указатель в центре
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 2; height: parent.height
+            color: "#FFFFFF"; opacity: 0.4
+        }
+    }
+
+    // ── Баннер-предупреждение (оранжевый) ──
+    Rectangle {
+        id: warningBanner
+        anchors {
+            left: parent.left; right: parent.right
+            top: waveformContainer.bottom
+            leftMargin: 16; rightMargin: 16; topMargin: Theme.paddingLarge
+        }
+        height: 48
+        radius: 12
+        color: "#FFB74D"
+        visible: volumeWarning.length > 0
+
+        Label {
+            anchors {
+                left: parent.left; leftMargin: 12
+                verticalCenter: parent.verticalCenter
+            }
+            text: volumeWarning
+            color: "black"
+            font { pixelSize: 20; bold: true }
+        }
+    }
+
+    // ── Полоска уровня (Ваша тонкая полоска) ──
+    Item {
+        id: levelBar
+        anchors {
+            left: parent.left; right: parent.right
+            top: warningBanner.visible ? warningBanner.bottom
+                                       : waveformContainer.bottom
+            leftMargin: 16; rightMargin: 16; topMargin: Theme.paddingLarge
+        }
+        height: 6
+
+        Rectangle {
+            anchors.fill: parent; radius: 3
+            color: "#2A2F3F"
+        }
+
+        Rectangle {
+            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+            width: parent.width * currentLevel
+            radius: 3
+            color: currentLevel > highThreshold ? "#F44336" : "#4CAF50"
+
+            Behavior on width  { NumberAnimation { duration: 50 } }
+            Behavior on color  { ColorAnimation  { duration: 200 } }
+        }
+    }
+
+    // ── Ошибка ──
+    Label {
+        anchors {
+            left: parent.left; right: parent.right
+            top: levelBar.bottom
+            margins: Theme.horizontalPageMargin
+            topMargin: Theme.paddingMedium
+        }
+        text: lastError
+        visible: lastError.length > 0
+        color: "#F44336"
+        wrapMode: Text.Wrap
+        font.pixelSize: Theme.fontSizeSmall
+    }
+
+    // ═══════════════════════════════════
+    //   НИЖНЯЯ ПАНЕЛЬ (ОБНОВЛЕННАЯ)
+    // ═══════════════════════════════════
+    // ═══════════════════════════════════
+    //   НИЖНЯЯ ПАНЕЛЬ (ОБНОВЛЕННАЯ)
+    // ═══════════════════════════════════
+    Item {
+        id: bottomBar
+        anchors {
+            left: parent.left;
+            right: parent.right;
+            bottom: parent.bottom;
+            bottomMargin: Theme.paddingLarge
+        }
+        height: 80
+
+        // ── Центральная кнопка (Запись / Пауза / Продолжить) ──
+        Item {
+            id: recordPauseBtn
+            anchors.centerIn: parent
+            width: 72; height: 72
+
+            // Фон кнопки: красный при старте/паузе, темно-серый когда идет запись
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: isRecording ? "#2A2F3F" : "#E53935"
+                Behavior on color { ColorAnimation { duration: 200 } }
+            }
+
+            // Иконка паузы (показывается только во время активной записи)
+            Image {
+                anchors.centerIn: parent
+                source: "image://theme/icon-m-pause"
+                visible: isRecording
+                opacity: 0.8
+                sourceSize { width: 32; height: 32 }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: isReady
+                onClicked: {
+                    // В вашем C++ контроллере метод startRecord() сам
+                    // переключает состояния: Старт -> Пауза -> Продолжить
+                    audioRecorder.startRecord()
+                }
+            }
+        }
+
+        // ── Правая кнопка (Остановка записи) ──
+        Rectangle {
+            anchors {
+                left: recordPauseBtn.right;
+                leftMargin: 32
+                verticalCenter: parent.verticalCenter
+            }
+            width: 56; height: 56
+            color: "#1C1B1F"
+            radius: 28
+            visible: isRecording || isPaused // Появляется, если запись идет или на паузе
+
+            Image {
+                anchors.centerIn: parent
+                source: "image://theme/icon-m-stop"
+                sourceSize { width: 28; height: 28 }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    audioRecorder.stopRecord()
                 }
             }
         }
