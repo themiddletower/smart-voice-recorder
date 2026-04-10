@@ -9,17 +9,19 @@
 
 SilenceService::SilenceService(QObject *parent) : QObject(parent) {}
 
-QString SilenceService::makeOutputWavPath(const QString &inputPath) const
+QString SilenceService::makeTempWavPath() const
 {
-    QFileInfo fi(inputPath);
+    const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    QDir().mkpath(cacheDir);
 
-    const QString outDir = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
-    QDir().mkpath(outDir);
+    const QString ts = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss_zzz");
+    return QDir(cacheDir).absoluteFilePath(QString("temp_edit_%1.wav").arg(ts));
+}
 
-    const QString base = fi.completeBaseName().isEmpty() ? "audio" : fi.completeBaseName();
-    const QString ts = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
-
-    return QDir(outDir).absoluteFilePath(QString("%1_cut_%2.wav").arg(base, ts));
+QString makeOutputWavPath(const QString &inputPath) // старый метод оставляем для совместимости, но он больше не используется
+{
+    Q_UNUSED(inputPath);
+    return QString();
 }
 
 QVariantMap SilenceService::removeSilence(const QString &inputPath,
@@ -33,7 +35,7 @@ QVariantMap SilenceService::removeSilence(const QString &inputPath,
         return result;
     }
 
-    const QString outWav = makeOutputWavPath(inputPath);
+    const QString outWav = makeTempWavPath(); // ← ВРЕМЕННЫЙ ФАЙЛ
 
     SilenceRemoverQt remover;
     SilenceRemoveResultQt r = remover.removeSilenceToWav(inputPath, annotations, silenceType, outWav);
@@ -43,12 +45,33 @@ QVariantMap SilenceService::removeSilence(const QString &inputPath,
         return result;
     }
 
-    if (r.outputPath.isEmpty() || !QFile::exists(r.outputPath)) {
-        result["error"] = "Output file missing: " + r.outputPath;
+    if (!QFile::exists(r.outputPath)) {
+        result["error"] = "Output file missing";
         return result;
     }
 
     result["outputPath"] = r.outputPath;
     result["annotations"] = r.newAnnotations;
     return result;
+}
+
+bool SilenceService::finalizeSave(const QString &currentTempPath, const QString &newFileName)
+{
+    if (currentTempPath.isEmpty() || newFileName.isEmpty() || !QFile::exists(currentTempPath))
+        return false;
+
+    QString finalName = newFileName.trimmed();
+    if (!finalName.toLower().endsWith(".wav", Qt::CaseInsensitive))
+        finalName += ".wav";
+
+    const QString musicDir = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+    QDir().mkpath(musicDir);
+
+    const QString finalPath = QDir(musicDir).absoluteFilePath(finalName);
+
+    // Удаляем, если уже есть файл с таким именем
+    if (QFile::exists(finalPath))
+        QFile::remove(finalPath);
+
+    return QFile::copy(currentTempPath, finalPath);
 }
