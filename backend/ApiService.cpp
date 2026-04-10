@@ -235,4 +235,30 @@ void ApiService::downloadFile(const QString& fileName)
     });
 }
 
+void ApiService::renameFile(const QString& oldName, const QString& newName)
+{
+    if (authToken.isEmpty()) return;
+
+    QUrl url(baseUrl + "/api/records/" + oldName);
+    QNetworkRequest request(url);
+
+    request.setRawHeader("Authorization", "Bearer " + authToken.toUtf8());
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QJsonObject json;
+    json["new_name"] = newName;
+
+    QNetworkReply* reply = manager->put(request, QJsonDocument(json).toJson());
+
+    connect(reply, &QNetworkReply::finished, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            qDebug() << "[ApiService] Rename success";
+            refreshFileList(); // обновляем список
+        } else {
+            qDebug() << "[ApiService] Rename error:" << reply->readAll();
+        }
+        reply->deleteLater();
+    });
+}
+
 

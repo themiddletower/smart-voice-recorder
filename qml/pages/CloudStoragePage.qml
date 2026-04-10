@@ -6,6 +6,7 @@ Page {
     id: cloudPage
     property string currentLocalFile: ""
     property string currentAnnotations: "[]"
+    property string fileToRename: ""
 
     // Предполагается, что ApiService зарегистрирован в C++ как "ApiService"
     // или доступен через контекстное свойство apiService
@@ -105,6 +106,45 @@ Page {
                         IconButton {
                             icon.source: "image://theme/icon-m-delete"
                             onClicked: apiService.deleteFile(modelData)
+                        }
+                        IconButton {
+                            icon.source: "image://theme/icon-m-edit"
+                            onClicked: {
+                                cloudPage.fileToRename = modelData
+                                renameDialog.open()
+                            }
+                        }
+                    }
+                }
+            }
+
+            Dialog {
+                id: renameDialog
+
+                Column {
+                    width: parent.width
+                    spacing: Theme.paddingMedium
+
+                    Label { text: "Новое имя файла"
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+
+                    TextField {
+                        id: newNameField
+                        width: parent.width
+                    }
+
+                    Button {
+                        text: "Переименовать"
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        onClicked: {
+                            newNameField.focus = false
+                            var ext = cloudPage.fileToRename.split(".").pop()
+                            var newName = newNameField.text + "." + ext
+                            apiService.renameFile(cloudPage.fileToRename, newName)
+                            renameDialog.accept()
                         }
                     }
                 }

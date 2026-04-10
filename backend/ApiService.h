@@ -24,6 +24,7 @@ public:
     Q_INVOKABLE void refreshFileList();           // Получить список файлов
     Q_INVOKABLE void deleteFile(const QString& fileName); // Удалить файл
     Q_INVOKABLE void downloadFile(const QString& fileName); // Чтение/Загрузка
+    Q_INVOKABLE void renameFile(const QString& oldName, const QString& newName);
     Q_INVOKABLE QString getSavedUsername() const;
     Q_INVOKABLE QString getSavedPassword() const;
 
