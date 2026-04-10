@@ -54,6 +54,7 @@ HEADERS += \
 
 DISTFILES += \
     qml/components/RecordTrack.qml \
+    qml/components/SaveDialog.qml \
     qml/pages/AudioFileListPage.qml \
     qml/pages/DictaphonePage.qml \
     qml/pages/RecordTrack.qml \

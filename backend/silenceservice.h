@@ -2,8 +2,7 @@
 #define SILENCESERVICE_H
 
 #include <QObject>
-#include <QVariantList>
-#include <QVariantMap>
+#include <QVariant>
 
 class SilenceService : public QObject
 {
@@ -13,10 +12,13 @@ public:
 
     Q_INVOKABLE QVariantMap removeSilence(const QString &inputPath,
                                           const QVariantList &annotations,
-                                          int silenceType = 2);
+                                          int silenceType);
+
+    // Новый метод — просто копирует текущий временный файл в Music с новым именем
+    Q_INVOKABLE bool finalizeSave(const QString &currentTempPath, const QString &newFileName);
 
 private:
-    QString makeOutputWavPath(const QString &inputPath) const;
+    QString makeTempWavPath() const; // временный файл в кэше
 };
 
 #endif // SILENCESERVICE_H
