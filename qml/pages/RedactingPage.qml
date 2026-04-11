@@ -18,7 +18,6 @@ Page {
     property string filePath: ""
     property alias fileName: header.headerText
 
-    // --- Свойства для сохранения ---
     property bool isModified: false
     property string originalFileName: ""
     // -------------------------------
@@ -229,6 +228,9 @@ Page {
 
         IconButton {
             icon.source: "image://theme/icon-m-cloud-upload"
+            anchors.left: parent.left
+            anchors.leftMargin: Theme.paddingMedium
+            anchors.verticalCenter: parent.verticalCenter
             onClicked: pageStack.push(Qt.resolvedUrl("CloudStoragePage.qml"), {
                 "currentLocalFile": page.filePath,
                 "currentAnnotations": JSON.stringify(page.fileAnnotations)

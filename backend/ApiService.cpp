@@ -37,7 +37,6 @@ void ApiService::sendDataToServer(const QString& filePath, const QString& jsonAn
     QUrl url(baseUrl + "/api/records");
     QNetworkRequest request(url);
 
-    // --- ПРАВИЛЬНАЯ УСТАНОВКА ЗАГОЛОВКОВ ---
     QString headerData = "Bearer " + authToken;
     request.setRawHeader("Authorization", headerData.toUtf8());
     request.setRawHeader("Accept", "application/json");
@@ -45,13 +44,11 @@ void ApiService::sendDataToServer(const QString& filePath, const QString& jsonAn
 
     QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
-    // Часть с JSON аннотациями
     QHttpPart jsonPart;
     jsonPart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"annotations\""));
     jsonPart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("text/plain; charset=utf-8"));
     jsonPart.setBody(jsonAnnotations.toUtf8());
 
-    // Часть с файлом
     QFile *file = new QFile(filePath);
     if (!file->exists() || !file->open(QIODevice::ReadOnly)) {
         qDebug() << "[ApiService] Ошибка: файл не найден или недоступен:" << filePath;
@@ -137,7 +134,6 @@ void ApiService::registerUser(const QString& username, const QString& password) 
     });
 }
 
-// --- НОВЫЙ МЕТОД: Получение списка файлов (READ) ---
 void ApiService::refreshFileList() {
     if (authToken.isEmpty()) return;
 
@@ -165,7 +161,6 @@ void ApiService::refreshFileList() {
     });
 }
 
-// --- НОВЫЙ МЕТОД: Удаление файла (DELETE) ---
 void ApiService::deleteFile(const QString& fileName) {
     if (authToken.isEmpty()) return;
 
@@ -186,7 +181,6 @@ void ApiService::deleteFile(const QString& fileName) {
     });
 }
 
-// --- НОВЫЙ МЕТОД: Чтение/Скачивание (READ) ---
 void ApiService::downloadFile(const QString& fileName)
 {
     if (authToken.isEmpty())
@@ -212,16 +206,13 @@ void ApiService::downloadFile(const QString& fileName)
         qDebug() << "[ApiService] File received:" << fileName
                  << "size:" << data.size();
 
-        // 1. Папка хранения
         const QString dir =
             QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
 
         QDir().mkpath(dir);
 
-        // 2. Полный путь файла
         const QString filePath = dir + "/" + fileName;
 
-        // 3. Сохраняем файл
         QFile file(filePath);
         if (!file.open(QIODevice::WriteOnly)) {
             qDebug() << "[ApiService] Cannot write file:" << filePath;

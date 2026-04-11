@@ -8,9 +8,6 @@ Page {
     property string currentAnnotations: "[]"
     property string fileToRename: ""
 
-    // Предполагается, что ApiService зарегистрирован в C++ как "ApiService"
-    // или доступен через контекстное свойство apiService
-
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: column.height
@@ -22,7 +19,6 @@ Page {
 
             PageHeader { title: "Облачное хранилище" }
 
-            // --- Блок авторизации ---
             SectionHeader { text: "Авторизация" }
 
             TextField {
@@ -76,7 +72,6 @@ Page {
                 onClicked: apiService.refreshFileList()
             }
 
-            // --- Список файлов в облаке ---
             SectionHeader { text: "Файлы в облаке" }
 
             Repeater {
@@ -152,7 +147,6 @@ Page {
         }
     }
 
-    // Уведомление о завершении скачивания
     Connections {
         target: apiService
         onFileDownloaded: {

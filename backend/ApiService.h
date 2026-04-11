@@ -10,7 +10,6 @@
 
 class ApiService : public QObject {
     Q_OBJECT
-    // Свойство для отображения списка файлов в QML
     Q_PROPERTY(QStringList fileListModel READ fileListModel NOTIFY fileListChanged)
 
 public:
@@ -20,7 +19,6 @@ public:
     Q_INVOKABLE void login(const QString& username, const QString& password);
     Q_INVOKABLE void sendDataToServer(const QString& filePath, const QString& jsonAnnotations);
 
-    // НОВЫЕ МЕТОДЫ
     Q_INVOKABLE void refreshFileList();           // Получить список файлов
     Q_INVOKABLE void deleteFile(const QString& fileName); // Удалить файл
     Q_INVOKABLE void downloadFile(const QString& fileName); // Чтение/Загрузка
