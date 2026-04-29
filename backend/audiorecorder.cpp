@@ -2,29 +2,31 @@
 #include <QStandardPaths>
 #include <qendian.h>
 
-#include "audiorecorderPlayer.h"
-#include "audiobufferextensionPlayer.h"
+#include "smartDenoiseWavSoft.h"
+#include "audiorecorder.h"
+#include "audiobufferextension.h"
 
-AudioRecorderRedact::AudioRecorderRedact(QObject *parent) : QObject(parent), m_isNewRecord(true), m_currentLevel(0.0)
+AudioRecorder::AudioRecorder(QObject *parent) : QObject(parent), m_isNewRecord(true), m_currentLevel(0.0)
 {
     m_probe.setSource(&m_audioRecorder);
-    connect(&m_probe, &QAudioProbe::audioBufferProbed, this, &AudioRecorderRedact::onProbeRecieved);
-
+    connect(&m_probe, &QAudioProbe::audioBufferProbed, this, &AudioRecorder::onProbeRecieved);
     connect(&m_audioRecorder,
             static_cast<void (QMediaRecorder::*)(QMediaRecorder::Error)>(&QMediaRecorder::error),
-            this, &AudioRecorderRedact::onRecordError);
+            this, &AudioRecorder::onRecordError);
     connect(&m_audioRecorder, &QAudioRecorder::statusChanged, this,
-            &AudioRecorderRedact::onRecorderStatusChanged);
+            &AudioRecorder::onRecorderStatusChanged);
+    connect(&m_audioRecorder, &QAudioRecorder::stateChanged,
+            this, &AudioRecorder::onRecorderStateChanged);
 }
 
-QString AudioRecorderRedact::generateFileName()
+QString AudioRecorder::generateFileName()
 {
     QDateTime date = QDateTime::currentDateTime();
     QString formattedTime = date.toString("yyyyMMdd_hhmmss");
     return "record_" + formattedTime;
 }
 
-void AudioRecorderRedact::start()
+void AudioRecorder::start()
 {
     if (m_isNewRecord) {
         QString audiofilePath =
@@ -32,24 +34,25 @@ void AudioRecorderRedact::start()
                 .arg(QStandardPaths::writableLocation(QStandardPaths::MusicLocation),
                      generateFileName(), m_audioRecorder.containerFormat());
         m_audioRecorder.setOutputLocation(QUrl(audiofilePath));
+        m_lastFilePath = audiofilePath;
         emit audiofilePathChanged(audiofilePath);
     }
     m_audioRecorder.record();
     m_isNewRecord = false;
 }
 
-void AudioRecorderRedact::stop()
+void AudioRecorder::stop()
 {
     m_audioRecorder.stop();
     m_isNewRecord = true;
 }
 
-void AudioRecorderRedact::pause()
+void AudioRecorder::pause()
 {
     m_audioRecorder.pause();
 }
 
-void AudioRecorderRedact::setRecordSettings(QString codec, QString container)
+void AudioRecorder::setRecordSettings(QString codec, QString container)
 {
     QAudioEncoderSettings audioSettings;
     audioSettings.setCodec(codec);
@@ -58,25 +61,24 @@ void AudioRecorderRedact::setRecordSettings(QString codec, QString container)
     m_audioRecorder.setContainerFormat(container);
 }
 
-qreal AudioRecorderRedact::getCurrentLevel()
+qreal AudioRecorder::getCurrentLevel()
 {
     return m_currentLevel;
 }
 
-void AudioRecorderRedact::onRecordError(QMediaRecorder::Error errorMsg)
+void AudioRecorder::onRecordError(QMediaRecorder::Error errorMsg)
 {
     Q_UNUSED(errorMsg)
-    qDebug() << "Error:" << m_audioRecorder.errorString();
     emit error(m_audioRecorder.errorString());
 }
 
-void AudioRecorderRedact::onProbeRecieved(QAudioBuffer buffer)
+void AudioRecorder::onProbeRecieved(QAudioBuffer buffer)
 {
     m_currentLevel = AudioBufferExtension::calculateAmplitude(buffer);
     emit durationChanged(m_audioRecorder.duration());
 }
 
-void AudioRecorderRedact::onRecorderStatusChanged(QMediaRecorder::Status status)
+void AudioRecorder::onRecorderStatusChanged(QMediaRecorder::Status status)
 {
     if (status == QAudioRecorder::LoadedStatus)
         emit recorderPrepared();
@@ -87,3 +89,23 @@ void AudioRecorderRedact::onRecorderStatusChanged(QMediaRecorder::Status status)
     else if (status == QAudioRecorder::FinalizingStatus)
         emit recordStopped();
 }
+
+void AudioRecorder::onRecorderStateChanged(QMediaRecorder::State state)
+{
+    if (state == QMediaRecorder::StoppedState) {
+        qDebug() << "Recorder fully stopped. Safe to process file.";
+
+        QString outputPath = m_lastFilePath;
+        outputPath.replace(".wav", "_denoised.wav");
+
+        bool ok = applyDenoiseOnly(m_lastFilePath, outputPath);
+        if (ok) {
+            qDebug() << "Denoised file saved:" << outputPath;
+        } else {
+            qDebug() << "Denoise failed";
+        }
+
+        emit recordStopped();
+    }
+}
+

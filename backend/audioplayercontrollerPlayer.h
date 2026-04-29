@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2024 Open Mobile Platform LLC community@omp.ru
-// SPDX-License-Identifier: BSD-3-Clause
-
 #ifndef AUDIOPLAYERCONTROLLERPLAYER_H
 #define AUDIOPLAYERCONTROLLERPLAYER_H
 
@@ -12,7 +9,7 @@
 #include "audioamplitudemodelPlayer.h"
 #include "timelinemodelPlayer.h"
 
-class AudioPlayerController : public QObject
+class AudioPlayerControllerRedact : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool isPlaying READ isPlaying NOTIFY isPlayingChanged)
@@ -20,14 +17,15 @@ class AudioPlayerController : public QObject
     Q_PROPERTY(bool isPlaybackAvailable READ isPlaybackAvailable WRITE setIsPlaybackAvailable NOTIFY isPlaybackAvailableChanged)
     Q_PROPERTY(bool isDecoding READ isDecoding NOTIFY isDecodingChanged)
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
-    Q_PROPERTY(AudioAmplitudeModel *audioAmplitudeModel READ audioAmplitudeModel NOTIFY audioAmplitudeModelChanged)
-    Q_PROPERTY(TimelineModel *timelineModel READ timelineModel NOTIFY timelineModelChanged)
+    Q_PROPERTY(AudioAmplitudeModelRedact *audioAmplitudeModel READ audioAmplitudeModel NOTIFY audioAmplitudeModelChanged)
+    Q_PROPERTY(TimelineModelRedact *timelineModel READ timelineModel NOTIFY timelineModelChanged)
 
 public:
-    explicit AudioPlayerController(QObject *parent = nullptr);
+    explicit AudioPlayerControllerRedact(QObject *parent = nullptr);
 
     Q_INVOKABLE void play(quint64 posInMillis = 0);
     Q_INVOKABLE void stop();
+    Q_INVOKABLE void pause();
     Q_INVOKABLE void setSource(QString path);
     Q_INVOKABLE QString pointerPositionToString(qint64 position);
 
@@ -41,8 +39,8 @@ public:
     bool isDecoding() const;
     qint64 position() const;
 
-    AudioAmplitudeModel *audioAmplitudeModel();
-    TimelineModel *timelineModel();
+    AudioAmplitudeModelRedact *audioAmplitudeModel();
+    TimelineModelRedact *timelineModel();
 
 signals:
     void positionChanged(qint64 position);
@@ -66,15 +64,14 @@ private:
     QMediaPlayer m_player;
     QAudioDecoder m_decoder;
 
-    AudioAmplitudeModel m_audioAmplitudeModel;
-    TimelineModel m_timelineModel;
+    AudioAmplitudeModelRedact m_audioAmplitudeModel;
+    TimelineModelRedact m_timelineModel;
 
     bool m_isPlaying;
     bool m_isPlayerPage;
     bool m_isPlaybackAvailable;
     bool m_isDecoding;
 
-    // --- ВАЖНО: состояние для "непрерывного" подсчёта амплитуд ---
     int m_measurementsPerSec = 10;
 
     int m_sampleRate = 0;
@@ -83,8 +80,8 @@ private:
     QAudioFormat::SampleType m_sampleType = QAudioFormat::Unknown;
     QAudioFormat::Endian m_endian = QAudioFormat::LittleEndian;
 
-    int m_framesPerPoint = 0;     // sampleRate / measurementsPerSec
-    int m_framesAccumulated = 0;  // сколько фреймов собрали в текущую точку
+    int m_framesPerPoint = 0;
+    int m_framesAccumulated = 0;
     quint32 m_peakAccumulated = 0;
 
     quint32 m_maxAllowedAmplitude = 1;
@@ -95,7 +92,7 @@ private:
     quint32 absSampleAsUInt(const unsigned char *p) const;
 };
 
-Q_DECLARE_METATYPE(AudioAmplitudeModel *)
-Q_DECLARE_METATYPE(TimelineModel *)
+Q_DECLARE_METATYPE(AudioAmplitudeModelRedact *)
+Q_DECLARE_METATYPE(TimelineModelRedact *)
 
 #endif // AUDIOPLAYERCONTROLLERPLAYER_H

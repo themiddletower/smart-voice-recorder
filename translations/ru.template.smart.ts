@@ -40,25 +40,53 @@
     </message>
 </context>
 <context>
+    <name>DictaphonePage</name>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="51"/>
+        <source>Говорите громче!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="53"/>
+        <source>Говорите тише!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="142"/>
+        <source>Отмена</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="161"/>
+        <source>Готово</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/DictaphonePage.qml" line="181"/>
+        <source>Новая запись</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MainPage</name>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="33"/>
-        <source>Main Page</source>
+        <location filename="../qml/pages/MainPage.qml" line="39"/>
+        <source>Главная</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="37"/>
-        <source>Вы сейчас находитесь на главной странице</source>
+        <location filename="../qml/pages/MainPage.qml" line="55"/>
+        <source>Начать запись</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="43"/>
-        <source>Запись на диктофон</source>
+        <location filename="../qml/pages/MainPage.qml" line="69"/>
+        <source>Редактирование</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="53"/>
-        <source>Редактирование записи</source>
+        <location filename="../qml/pages/MainPage.qml" line="87"/>
+        <source>Приложение для работы со звуком</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

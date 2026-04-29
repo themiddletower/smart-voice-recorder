@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2024 Open Mobile Platform LLC community@omp.ru
-// SPDX-License-Identifier: BSD-3-Clause
-
 #include "audioplayercontrollerPlayer.h"
 
 #include <qendian.h>
@@ -10,7 +7,7 @@
 static const int s_listenIntervalInMillis = 20;
 static const qreal s_minimalAmplitude = 0.05;
 
-AudioPlayerController::AudioPlayerController(QObject *parent)
+AudioPlayerControllerRedact::AudioPlayerControllerRedact(QObject *parent)
     : QObject(parent)
     , m_isPlaying(false)
     , m_isPlayerPage(false)
@@ -20,23 +17,23 @@ AudioPlayerController::AudioPlayerController(QObject *parent)
     m_player.setNotifyInterval(s_listenIntervalInMillis);
 
     connect(&m_player, &QMediaPlayer::mediaStatusChanged,
-            this, &AudioPlayerController::onMediaStatusChanged);
+            this, &AudioPlayerControllerRedact::onMediaStatusChanged);
     connect(&m_player, &QMediaPlayer::positionChanged,
-            this, &AudioPlayerController::onPositionChanged);
+            this, &AudioPlayerControllerRedact::onPositionChanged);
 
     connect(&m_player, &QMediaPlayer::durationChanged, this, [this](qint64 d) {
         emit durationChanged(d);
     });
 
     connect(&m_decoder, &QAudioDecoder::bufferReady,
-            this, &AudioPlayerController::onDecoderBufferReady);
+            this, &AudioPlayerControllerRedact::onDecoderBufferReady);
     connect(&m_decoder, &QAudioDecoder::finished,
-            this, &AudioPlayerController::onDecoderFinished);
+            this, &AudioPlayerControllerRedact::onDecoderFinished);
 
     resetDecodeState();
 }
 
-void AudioPlayerController::resetDecodeState()
+void AudioPlayerControllerRedact::resetDecodeState()
 {
     m_sampleRate = 0;
     m_channels = 0;
@@ -52,7 +49,7 @@ void AudioPlayerController::resetDecodeState()
     m_tempAmplitudes.clear();
 }
 
-void AudioPlayerController::play(quint64 posInMillis)
+void AudioPlayerControllerRedact::play(quint64 posInMillis)
 {
     if (posInMillis != static_cast<quint64>(m_player.position())) {
         m_player.setPosition(posInMillis);
@@ -62,14 +59,21 @@ void AudioPlayerController::play(quint64 posInMillis)
     emit isPlayingChanged();
 }
 
-void AudioPlayerController::stop()
+void AudioPlayerControllerRedact::stop()
+{
+    m_player.stop();
+    m_isPlaying = false;
+    emit isPlayingChanged();
+}
+
+void AudioPlayerControllerRedact::pause()
 {
     m_player.pause();
     m_isPlaying = false;
     emit isPlayingChanged();
 }
 
-void AudioPlayerController::setSource(QString path)
+void AudioPlayerControllerRedact::setSource(QString path)
 {
     m_player.setMedia(QUrl::fromLocalFile(path));
 
@@ -88,12 +92,12 @@ void AudioPlayerController::setSource(QString path)
     }
 }
 
-TimelineModel *AudioPlayerController::timelineModel()
+TimelineModelRedact *AudioPlayerControllerRedact::timelineModel()
 {
     return &m_timelineModel;
 }
 
-quint32 AudioPlayerController::absSampleAsUInt(const unsigned char *p) const
+quint32 AudioPlayerControllerRedact::absSampleAsUInt(const unsigned char *p) const
 {
     quint32 amp = 0;
 
@@ -125,7 +129,6 @@ quint32 AudioPlayerController::absSampleAsUInt(const unsigned char *p) const
             amp = (m_endian == QAudioFormat::LittleEndian) ? quint32(qAbs(qFromLittleEndian<qint32>(p)))
                                                            : quint32(qAbs(qFromBigEndian<qint32>(p)));
         } else if (m_sampleType == QAudioFormat::Float) {
-            // float [-1..1] -> условно в int диапазон
             amp = quint32(qAbs(*reinterpret_cast<const float *>(p)) * 0x7fffffff);
         }
         return amp;
@@ -134,7 +137,7 @@ quint32 AudioPlayerController::absSampleAsUInt(const unsigned char *p) const
     return 0;
 }
 
-void AudioPlayerController::onDecoderBufferReady()
+void AudioPlayerControllerRedact::onDecoderBufferReady()
 {
     const QAudioBuffer buffer = m_decoder.read();
     if (!buffer.isValid())
@@ -144,7 +147,6 @@ void AudioPlayerController::onDecoderBufferReady()
     if (!fmt.isValid())
         return;
 
-    // Инициализация на первом буфере
     if (m_sampleRate == 0) {
         m_sampleRate = fmt.sampleRate();
         m_channels = fmt.channelCount();
@@ -154,26 +156,22 @@ void AudioPlayerController::onDecoderBufferReady()
 
         m_framesPerPoint = qMax(1, m_sampleRate / m_measurementsPerSec);
 
-        // max amplitude для нормализации
         if (m_sampleSize == 8) m_maxAllowedAmplitude = UINT8_MAX;
         else if (m_sampleSize == 16) m_maxAllowedAmplitude = UINT16_MAX;
         else if (m_sampleSize == 32) m_maxAllowedAmplitude = UINT32_MAX;
         else m_maxAllowedAmplitude = 1;
     }
 
-    // Размер сэмпла
     const int bytesPerSample = m_sampleSize / 8;
     if (bytesPerSample <= 0 || m_channels <= 0)
         return;
 
     const unsigned char *ptr = buffer.constData<unsigned char>();
 
-    // Идём по ФРЕЙМАМ (frame = все каналы в один момент времени)
     const int frames = buffer.frameCount();
     for (int f = 0; f < frames; ++f) {
         quint32 peakInFrame = 0;
 
-        // берём максимум по каналам
         for (int ch = 0; ch < m_channels; ++ch) {
             const int sampleIndex = (f * m_channels + ch) * bytesPerSample;
             const unsigned char *sp = ptr + sampleIndex;
@@ -186,9 +184,8 @@ void AudioPlayerController::onDecoderBufferReady()
 
         m_framesAccumulated++;
 
-        // каждые m_framesPerPoint фреймов выдаём одну амплитуду
         if (m_framesAccumulated >= m_framesPerPoint) {
-            qreal level = (qreal)m_peakAccumulated / (qreal)m_maxAllowedAmplitude * 2.0; // "гейн" как у вас
+            qreal level = (qreal)m_peakAccumulated / (qreal)m_maxAllowedAmplitude * 2.0;
             level = qBound<qreal>(s_minimalAmplitude, level, 1.0);
 
             m_tempAmplitudes.append(level);
@@ -199,12 +196,11 @@ void AudioPlayerController::onDecoderBufferReady()
     }
 }
 
-void AudioPlayerController::onDecoderFinished()
+void AudioPlayerControllerRedact::onDecoderFinished()
 {
     m_isDecoding = false;
     emit isDecodingChanged();
 
-    // Подгоняем длину массива амплитуд к duration
     const qint64 durMs = m_player.duration();
     if (durMs > 0) {
         const int expected = qMax(1, int(qCeil((durMs / 1000.0) * m_measurementsPerSec)));
@@ -219,7 +215,6 @@ void AudioPlayerController::onDecoderFinished()
 
         m_timelineModel.fillModel(int(durMs / 60000));
     } else {
-        // fallback по амплитудам
         const qint64 totalMs = qint64((m_tempAmplitudes.size() / double(m_measurementsPerSec)) * 1000.0);
         m_timelineModel.fillModel(int(totalMs / 60000));
     }
@@ -229,7 +224,7 @@ void AudioPlayerController::onDecoderFinished()
     emit decodingCompleted();
 }
 
-QString AudioPlayerController::pointerPositionToString(qint64 position)
+QString AudioPlayerControllerRedact::pointerPositionToString(qint64 position)
 {
     QString millis = QString::number((position / 10) % 100).rightJustified(2, '0');
     QString seconds = QString::number((position / 1000) % 60).rightJustified(2, '0');
@@ -237,34 +232,34 @@ QString AudioPlayerController::pointerPositionToString(qint64 position)
     return mins + ":" + seconds + "." + millis;
 }
 
-bool AudioPlayerController::isPlaying() const { return m_isPlaying; }
-bool AudioPlayerController::isPlayerPage() const { return m_isPlayerPage; }
+bool AudioPlayerControllerRedact::isPlaying() const { return m_isPlaying; }
+bool AudioPlayerControllerRedact::isPlayerPage() const { return m_isPlayerPage; }
 
-void AudioPlayerController::setIsPlayerPage(bool newIsPlayerPage)
+void AudioPlayerControllerRedact::setIsPlayerPage(bool newIsPlayerPage)
 {
     if (m_isPlayerPage == newIsPlayerPage) return;
     m_isPlayerPage = newIsPlayerPage;
     emit isPlayerPageChanged();
 }
 
-bool AudioPlayerController::isPlaybackAvailable() const { return m_isPlaybackAvailable; }
+bool AudioPlayerControllerRedact::isPlaybackAvailable() const { return m_isPlaybackAvailable; }
 
-void AudioPlayerController::setIsPlaybackAvailable(bool newIsPlaybackAvailable)
+void AudioPlayerControllerRedact::setIsPlaybackAvailable(bool newIsPlaybackAvailable)
 {
     if (m_isPlaybackAvailable == newIsPlaybackAvailable) return;
     m_isPlaybackAvailable = newIsPlaybackAvailable;
     emit isPlaybackAvailableChanged();
 }
 
-bool AudioPlayerController::isDecoding() const { return m_isDecoding; }
-qint64 AudioPlayerController::position() const { return m_player.position(); }
+bool AudioPlayerControllerRedact::isDecoding() const { return m_isDecoding; }
+qint64 AudioPlayerControllerRedact::position() const { return m_player.position(); }
 
-AudioAmplitudeModel *AudioPlayerController::audioAmplitudeModel()
+AudioAmplitudeModelRedact *AudioPlayerControllerRedact::audioAmplitudeModel()
 {
     return &m_audioAmplitudeModel;
 }
 
-void AudioPlayerController::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
+void AudioPlayerControllerRedact::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
 {
     if (status == QMediaPlayer::LoadedMedia) {
         setIsPlaybackAvailable(true);
@@ -276,7 +271,7 @@ void AudioPlayerController::onMediaStatusChanged(QMediaPlayer::MediaStatus statu
     }
 }
 
-void AudioPlayerController::onPositionChanged(qint64 pos)
+void AudioPlayerControllerRedact::onPositionChanged(qint64 pos)
 {
     emit positionChanged(pos);
 }

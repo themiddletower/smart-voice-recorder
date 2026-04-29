@@ -1,43 +1,41 @@
 #include <QtQuick>
-#include <QQmlContext>
 #include <auroraapp.h>
-// +++ добавь:
 
-#include "./backend/audiosegmenter.h"
-#include "./backend/segmentlistmodel.h"
+#include "./backend/audioAnalyzer.h"
+#include "audioplayercontroller.h"
+#include "audioplayercontrollerPlayer.h"
+#include "audiorecordercontroller.h"
+#include "silenceservice.h"
+#include "ApiService.h"
 
-//#include "./backend/sessionmanager.h"
-//#include "./backend/sessionmanager.h"
-//#include "audiorecordercontroller.h"
-
-#include "./backend/audioplayercontrollerPlayer.h"
 int main(int argc, char *argv[])
 {
     QScopedPointer<QGuiApplication> application(Aurora::Application::application(argc, argv));
-    application->setOrganizationName(QStringLiteral("ru.template"));
-    application->setApplicationName(QStringLiteral("smart"));
+    application->setOrganizationName(QStringLiteral("ru.auroraos"));
+    application->setApplicationName(QStringLiteral("SmartVoiceRecorder"));
 
-    //qmlRegisterType<SessionManager>("com.example.sessions", 1, 0, "SessionManager");
-    qmlRegisterType<AudioPlayerController>("ru.auroraos.AudioRecorder", 1, 0,
+    qmlRegisterType<AudioPlayerControllerRedact>("ru.auroraos.AudioRecorder",
+                                                 1,
+                                                 0,
+                                                 "AudioPlayerControllerRedact");
+
+    qmlRegisterType<SilenceService>("ru.auroraos.AudioRecorder", 1, 0, "SilenceService");
+
+    qmlRegisterType<AudioRecorderController>("ru.auroraos.AudioRecorder",
+                                             1,
+                                             0,
+                                             "AudioRecorderController");
+    qmlRegisterType<AudioPlayerController>("ru.auroraos.AudioRecorder",
+                                           1,
+                                           0,
                                            "AudioPlayerController");
-    // +++ создаём model + segmenter в C++:
-    SegmentListModel segmentModel;
-    AudioSegmenter segmenter;
-    segmenter.setSegmentModel(&segmentModel);
+    qmlRegisterType<AudioAnalyzer>("ru.auroraos.AudioAnalyzer", 1, 0, "AudioAnalyzer");
 
-
-    //qmlRegisterType<AudioRecorderController>("ru.auroraos.AudioRecorder", 1, 0,
-    //                                         "AudioRecorderController");
-    //qmlRegisterType<AudioPlayerController>("ru.auroraos.AudioRecorder", 1, 0,
-    //                                       "AudioPlayerController");
+    ApiService apiService;
 
     QScopedPointer<QQuickView> view(Aurora::Application::createView());
-
-    // +++ пробрасываем в QML:
-    view->rootContext()->setContextProperty("segmenter", &segmenter);
-    view->rootContext()->setContextProperty("segmentModel", &segmentModel);
-    view->setSource(Aurora::Application::pathTo(QStringLiteral("qml/smart.qml")));
+    view->rootContext()->setContextProperty("apiService", &apiService);
+    view->setSource(Aurora::Application::pathTo(QStringLiteral("qml/SmartVoiceRecorder.qml")));
     view->show();
-
     return application->exec();
 }

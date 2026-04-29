@@ -8,6 +8,9 @@ ApplicationWindow {
     cover: Qt.resolvedUrl("cover/DefaultCoverPage.qml")
     allowedOrientations: defaultAllowedOrientations
 
+    AudioPlayerControllerRedact {
+        id: playerControllerRedact
+    }
 
     AudioPlayerController {
         id: playerController

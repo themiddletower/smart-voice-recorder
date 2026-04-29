@@ -1,83 +1,77 @@
 TARGET = ru.template.smart
 
-# CONFIG += \
-#     auroraapp
-
-CONFIG += auroraapp
-CONFIG += c++17
+CONFIG += \
+    auroraapp
 
 QT += core network qml gui quick multimedia
 
 PKGCONFIG += \
 
-INCLUDEPATH += \
-    3rdparty/libfvad/include \
-    3rdparty/libfvad/src
-
 SOURCES += \
+    backend/ApiService.cpp \
     backend/amplitudemodelfillerPlayer.cpp \
+    backend/audioAnalyzer.cpp \
     backend/audioamplitudePlayer.cpp \
+    backend/audioamplitudemodel.cpp \
     backend/audioamplitudemodelPlayer.cpp \
+    backend/audiobufferextension.cpp \
     backend/audiobufferextensionPlayer.cpp \
+    backend/audioplayercontroller.cpp \
     backend/audioplayercontrollerPlayer.cpp \
+    backend/audiorecorder.cpp \
     backend/audiorecorderPlayer.cpp \
-    backend/audiosegmenter.cpp \
-    backend/segmentlistmodel.cpp \
+    backend/audiorecordercontroller.cpp \
     backend/sessionmanag.cpp \
+    backend/silenceremover.cpp \
+    backend/silenceremover_qt.cpp \
+    backend/silenceservice.cpp \
+    backend/smartDenoiseWavSoft.cpp \
     backend/timelineblockPlayer.cpp \
+    backend/timelinemodel.cpp \
     backend/timelinemodelPlayer.cpp \
-    backend/vadengine.cpp \
-    backend/wavreader.cpp \
-    src/main.cpp
+    src/main.cpp \
 
 HEADERS += \
-    3rdparty/libfvad/include/fvad.h \
-    backend/audiosegment.h \
-    backend/audiosegmenter.h \
-    backend/segmentlistmodel.h \
-    backend/vadengine.h \
-    backend/wavreader.h
-
-SOURCES += \
-    3rdparty/libfvad/src/fvad.c \
-    3rdparty/libfvad/src/vad/vad_core.c \
-    3rdparty/libfvad/src/vad/vad_filterbank.c \
-    3rdparty/libfvad/src/vad/vad_gmm.c \
-    3rdparty/libfvad/src/vad/vad_sp.c \
-    3rdparty/libfvad/src/signal_processing/energy.c \
-    3rdparty/libfvad/src/signal_processing/get_scaling_square.c \
-    3rdparty/libfvad/src/signal_processing/division_operations.c \
-    3rdparty/libfvad/src/signal_processing/spl_inl.c \
-    3rdparty/libfvad/src/signal_processing/resample_48khz.c \
-    3rdparty/libfvad/src/signal_processing/resample_by_2_internal.c \
-    3rdparty/libfvad/src/signal_processing/resample_fractional.c
-
-HEADERS += \
+    backend/ApiService.h \
     backend/amplitudemodelfillerPlayer.h \
+    backend/audioAnalyzer.h \
     backend/audioamplitudePlayer.h \
+    backend/audioamplitudemodel.h \
     backend/audioamplitudemodelPlayer.h \
+    backend/audiobufferextension.h \
     backend/audiobufferextensionPlayer.h \
+    backend/audioplayercontroller.h \
     backend/audioplayercontrollerPlayer.h \
+    backend/audiorecorder.h \
     backend/audiorecorderPlayer.h \
+    backend/audiorecordercontroller.h \
     backend/sessionmanag.h \
+    backend/silenceremover.h \
+    backend/silenceremover_qt.h \
+    backend/silenceservice.h \
+    backend/smartDenoiseWavSoft.h \
     backend/timelineblockPlayer.h \
+    backend/timelinemodel.h \
     backend/timelinemodelPlayer.h
 
 DISTFILES += \
     qml/components/RecordTrack.qml \
+    qml/components/SaveDialog.qml \
     qml/pages/AudioFileListPage.qml \
+    qml/pages/DictaphonePage.qml \
+    qml/pages/RecordTrack.qml \
     qml/pages/RecordingPage.qml \
     qml/pages/RedactingPage.qml \
-    qml/pages/SegmentPage.qml \
-    rpm/ru.template.smart.spec
+    rpm/ru.template.smart.spec \
 
 AURORAAPP_ICONS = 86x86 108x108 128x128 172x172
 
 CONFIG += auroraapp_i18n
 
+INCLUDEPATH += backend
 TRANSLATIONS += \
     translations/ru.template.smart.ts \
-    translations/ru.template.smart-ru.ts
+    translations/ru.template.smart-ru.ts \
 
 RESOURCES += \
     resources.qrc
