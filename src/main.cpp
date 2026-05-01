@@ -2,11 +2,11 @@
 #include <auroraapp.h>
 
 #include "./backend/audioAnalyzer.h"
+#include "ApiService.h"
 #include "audioplayercontroller.h"
 #include "audioplayercontrollerPlayer.h"
 #include "audiorecordercontroller.h"
 #include "silenceservice.h"
-#include "ApiService.h"
 
 int main(int argc, char *argv[])
 {

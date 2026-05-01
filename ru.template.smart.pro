@@ -9,6 +9,7 @@ PKGCONFIG += \
 
 SOURCES += \
     backend/ApiService.cpp \
+    backend/VADModel.cpp \
     backend/amplitudemodelfillerPlayer.cpp \
     backend/audioAnalyzer.cpp \
     backend/audioamplitudePlayer.cpp \
@@ -33,6 +34,7 @@ SOURCES += \
 
 HEADERS += \
     backend/ApiService.h \
+    backend/VADModel.h \
     backend/amplitudemodelfillerPlayer.h \
     backend/audioAnalyzer.h \
     backend/audioamplitudePlayer.h \
@@ -45,6 +47,7 @@ HEADERS += \
     backend/audiorecorder.h \
     backend/audiorecorderPlayer.h \
     backend/audiorecordercontroller.h \
+    backend/json.hpp \
     backend/sessionmanag.h \
     backend/silenceremover.h \
     backend/silenceremover_qt.h \
@@ -55,6 +58,8 @@ HEADERS += \
     backend/timelinemodelPlayer.h
 
 DISTFILES += \
+    backend/norm.json \
+    backend/weights.json \
     qml/components/RecordTrack.qml \
     qml/components/SaveDialog.qml \
     qml/pages/AudioFileListPage.qml \
