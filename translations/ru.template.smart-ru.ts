@@ -42,43 +42,28 @@
 <context>
     <name>DictaphonePage</name>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="87"/>
-        <source>Слишком тихо, говорите громче</source>
+        <location filename="../qml/pages/DictaphonePage.qml" line="51"/>
+        <source>Говорите громче!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="89"/>
-        <source>Слишком громко, говорите тише</source>
+        <location filename="../qml/pages/DictaphonePage.qml" line="53"/>
+        <source>Говорите тише!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="96"/>
-        <source>Диктофон</source>
+        <location filename="../qml/pages/DictaphonePage.qml" line="142"/>
+        <source>Отмена</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="131"/>
-        <source>Уровень громкости</source>
+        <location filename="../qml/pages/DictaphonePage.qml" line="161"/>
+        <source>Готово</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="278"/>
-        <source>Пауза</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="279"/>
-        <source>Продолжить</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="280"/>
-        <source>Запись</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="310"/>
-        <source>Стоп</source>
+        <location filename="../qml/pages/DictaphonePage.qml" line="181"/>
+        <source>Новая запись</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

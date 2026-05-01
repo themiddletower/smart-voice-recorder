@@ -5,5 +5,7 @@
     <qresource prefix="/">
         <file>backend/example.mp3</file>
         <file>backend/example.wav</file>
+	<file>backend/weights.json</file>
+	<file>backend/norm.json</file>
     </qresource>
 </RCC>

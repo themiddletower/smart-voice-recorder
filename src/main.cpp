@@ -2,6 +2,7 @@
 #include <auroraapp.h>
 
 #include "./backend/audioAnalyzer.h"
+#include "ApiService.h"
 #include "audioplayercontroller.h"
 #include "audioplayercontrollerPlayer.h"
 #include "audiorecordercontroller.h"
@@ -30,7 +31,10 @@ int main(int argc, char *argv[])
                                            "AudioPlayerController");
     qmlRegisterType<AudioAnalyzer>("ru.auroraos.AudioAnalyzer", 1, 0, "AudioAnalyzer");
 
+    ApiService apiService;
+
     QScopedPointer<QQuickView> view(Aurora::Application::createView());
+    view->rootContext()->setContextProperty("apiService", &apiService);
     view->setSource(Aurora::Application::pathTo(QStringLiteral("qml/SmartVoiceRecorder.qml")));
     view->show();
     return application->exec();
