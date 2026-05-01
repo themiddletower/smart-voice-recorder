@@ -27,7 +27,7 @@ Page {
                 placeholderText: "Путь к WAV-файлу"
                 label: "Файл"
                 // Для теста можно вписать путь вручную
-                text: "/home/defaultuser/Music/test.wav"
+                text: "/../../Music/test.wav"
             }
 
             // ═══ Кнопка запуска ═══

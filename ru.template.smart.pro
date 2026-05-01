@@ -75,3 +75,13 @@ TRANSLATIONS += \
 
 RESOURCES += \
     resources.qrc
+
+INCLUDEPATH += \
+    $$PWD/3rdparty/libfvad/include \
+    $$PWD/3rdparty/libfvad/src
+
+SOURCES += $$files($$PWD/3rdparty/libfvad/src/*.c, true)
+
+
+HEADERS += $$files($$PWD/3rdparty/libfvad/src/*.h, true) \
+           $$PWD/3rdparty/libfvad/include/fvad.h

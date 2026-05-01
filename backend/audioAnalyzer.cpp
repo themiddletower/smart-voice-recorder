@@ -5,6 +5,10 @@
 #include <QUrl>
 #include <QVariantMap>
 
+extern "C" {
+#include "fvad.h"
+}
+
 struct FrameInfo {
     double startTime;
     int type; // 1-речь, 2-тишина, 3-громко
@@ -32,17 +36,25 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     const int frameSamples = sampleRate / 50; // 20 мс
     const double frameDurationMs = 20.0;
 
-    // --- RMS ---
-    auto computeRMS = [](const std::vector<int16_t>& data) -> double {
+    // 1. ИНИЦИАЛИЗИРУЕМ VAD
+    Fvad* vad = fvad_new();
+    fvad_set_sample_rate(vad, sampleRate);
+    fvad_set_mode(vad, 3);
+
+    // Функция расчёта RMS
+    auto computeRMS =[](const std::vector<int16_t>& data) -> double {
         if (data.empty()) return 0.0;
         double sum = 0.0;
         for (int16_t s : data) sum += double(s) * s;
         return std::sqrt(sum / data.size());
     };
 
-    std::vector<double> rmsValues;
+    std::vector<int> labels; // Сюда складываем метки
     std::vector<int16_t> buffer(frameSamples * channels);
 
+    const double loudThreshold = 5000.0; // Порог перегрузов
+
+    // 2. ЧИТАЕМ ФАЙЛ И ПРОГОНЯЕМ ЧЕРЕЗ VAD
     while (file.read(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(int16_t))) {
         std::vector<int16_t> mono(frameSamples);
 
@@ -54,23 +66,33 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
             mono[j] = int16_t(acc / channels);
         }
 
-        rmsValues.push_back(computeRMS(mono));
+        // Считаем RMS только для текущего кадра
+        double currentRms = computeRMS(mono);
+
+        // Пропускаем моно-кадр через нейронку VAD
+        int isSpeech = fvad_process(vad, mono.data(), frameSamples);
+
+        // Расставляем метки
+        if (currentRms > loudThreshold) {
+            labels.push_back(3); // перегруз / слишком громко
+        } else if (isSpeech == 1) {
+            labels.push_back(1); // РЕЧЬ!
+        } else {
+            labels.push_back(2); // ТИШИНА!
+        }
     }
 
-    if (rmsValues.empty()) return result;
+    // 3. ОСВОБОЖДАЕМ ПАМЯТЬ VAD
+    fvad_free(vad);
 
-    const double speechThreshold = 800.0;
-    const double loudThreshold   = 5000.0;
+    if (labels.empty()) return result;
 
-    std::vector<int> labels;
-    labels.reserve(rmsValues.size());
+    // =========================================================
+    // ВЕСЬ СТАРЫЙ БЛОК С rmsValues И speechThreshold = 800.0
+    // ПОЛНОСТЬЮ УДАЛЕН ОТСЮДА!
+    // =========================================================
 
-    for (double rms : rmsValues) {
-        if (rms > loudThreshold) labels.push_back(3); // громко
-        else if (rms > speechThreshold) labels.push_back(1); // речь
-        else labels.push_back(2); // тишина
-    }
-
+    // 4. СГЛАЖИВАНИЕ (твой отличный алгоритм)
     const int window = 40;
     std::vector<int> smooth = labels;
 
@@ -96,6 +118,7 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
         smooth[i] = bestType;
     }
 
+    // 5. ФОРМИРОВАНИЕ СЕГМЕНТОВ
     std::vector<QVariantMap> segments;
 
     int currentType = smooth[0];
@@ -143,6 +166,7 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     }
     result.append(current);
 
+    // 6. ДОБАВЛЕНИЕ ОТСТУПОВ (PADDING)
     const double speechPaddingMs = 400.0;
 
     for (int i = 0; i < result.size(); ++i) {
@@ -159,12 +183,12 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
         }
     }
 
+    // 7. ОЧИСТКА И ФИНАЛЬНАЯ СКЛЕЙКА
     QVariantList cleanedResult;
 
     for (int i = 0; i < result.size(); ++i) {
         QVariantMap seg = result[i].toMap();
 
-        // тишина (тип 2)
         if (seg["type"].toInt() == 2) {
             double t1 = seg["t1"].toDouble();
             double t2 = seg["t2"].toDouble();
