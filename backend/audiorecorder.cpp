@@ -57,6 +57,10 @@ void AudioRecorder::setRecordSettings(QString codec, QString container)
     QAudioEncoderSettings audioSettings;
     audioSettings.setCodec(codec);
     audioSettings.setQuality(QMultimedia::HighQuality);
+
+    audioSettings.setSampleRate(16000); // Строго 16000 Гц
+    audioSettings.setChannelCount(1);   // Строго моно-звук
+
     m_audioRecorder.setEncodingSettings(audioSettings);
     m_audioRecorder.setContainerFormat(container);
 }

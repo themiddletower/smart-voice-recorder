@@ -4,12 +4,15 @@
 #include <vector>
 #include <QUrl>
 #include <QVariantMap>
+#include <QDebug> // Добавили для вывода логов
 
-extern "C" {
+extern "C"
+{
 #include "fvad.h"
 }
 
-struct FrameInfo {
+struct FrameInfo
+{
     double startTime;
     int type; // 1-речь, 2-тишина, 3-громко
 };
@@ -36,10 +39,21 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     const int frameSamples = sampleRate / 50; // 20 мс
     const double frameDurationMs = 20.0;
 
-    // 1. ИНИЦИАЛИЗИРУЕМ VAD
+    // 1. ИНИЦИАЛИЗИРУЕМ VAD И ПРОВЕРЯЕМ ЧАСТОТУ
     Fvad* vad = fvad_new();
-    fvad_set_sample_rate(vad, sampleRate);
-    fvad_set_mode(vad, 3);
+    bool useVad = true; // Флаг: сможем ли мы использовать VAD
+
+    // Если частота не поддерживается (например, 44100), fvad_set_sample_rate вернет -1
+    if (fvad_set_sample_rate(vad, sampleRate) < 0)
+    {
+        qDebug() << "ОШИБКА VAD" << sampleRate << "НЕ ПОДДЕРЖИВАЕТСЯ";
+        useVad = false;
+    }
+    else
+    {
+        qDebug() << "VAD УСПЕШНО ЗАПУЩЕН НА ЧАСТОТЕ" << sampleRate;
+        fvad_set_mode(vad, 3);
+    }
 
     // Функция расчёта RMS
     auto computeRMS =[](const std::vector<int16_t>& data) -> double {
@@ -53,8 +67,9 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     std::vector<int16_t> buffer(frameSamples * channels);
 
     const double loudThreshold = 5000.0; // Порог перегрузов
+    const double speechThresholdFallback = 800.0; // Порог для старого алгоритма
 
-    // 2. ЧИТАЕМ ФАЙЛ И ПРОГОНЯЕМ ЧЕРЕЗ VAD
+    // 2. ЧИТАЕМ ФАЙЛ И ПРОГОНЯЕМ ЧЕРЕЗ АЛГОРИТМЫ
     while (file.read(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(int16_t))) {
         std::vector<int16_t> mono(frameSamples);
 
@@ -69,16 +84,28 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
         // Считаем RMS только для текущего кадра
         double currentRms = computeRMS(mono);
 
-        // Пропускаем моно-кадр через нейронку VAD
-        int isSpeech = fvad_process(vad, mono.data(), frameSamples);
-
         // Расставляем метки
         if (currentRms > loudThreshold) {
             labels.push_back(3); // перегруз / слишком громко
-        } else if (isSpeech == 1) {
-            labels.push_back(1); // РЕЧЬ!
-        } else {
-            labels.push_back(2); // ТИШИНА!
+        }
+        else if (useVad)
+        {
+            // ЕСЛИ ЧАСТОТА ПРАВИЛЬНАЯ (16000, 48000) -> ИСПОЛЬЗУЕМ НЕЙРОНКУ
+            int isSpeech = fvad_process(vad, mono.data(), frameSamples);
+            if (isSpeech == 1) {
+                labels.push_back(1); // РЕЧЬ!
+            } else {
+                labels.push_back(2); // ТИШИНА!
+            }
+        }
+        else
+        {
+            // ЕСЛИ ЧАСТОТА НЕПОДХОДЯЩАЯ (44100) -> ИСПОЛЬЗУЕМ СТАРЫЙ АЛГОРИТМ ПО ГРОМКОСТИ
+            if (currentRms > speechThresholdFallback) {
+                labels.push_back(1); // РЕЧЬ! (по RMS)
+            } else {
+                labels.push_back(2); // ТИШИНА! (по RMS)
+            }
         }
     }
 
@@ -86,11 +113,6 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     fvad_free(vad);
 
     if (labels.empty()) return result;
-
-    // =========================================================
-    // ВЕСЬ СТАРЫЙ БЛОК С rmsValues И speechThreshold = 800.0
-    // ПОЛНОСТЬЮ УДАЛЕН ОТСЮДА!
-    // =========================================================
 
     // 4. СГЛАЖИВАНИЕ (твой отличный алгоритм)
     const int window = 40;
@@ -265,5 +287,6 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
         finalResult.append(seg);
     }
 
+    qDebug() << "Возвращение сегментов audioAnalyzer.cpp";
     return finalResult;
 }
