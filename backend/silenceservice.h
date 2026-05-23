@@ -14,11 +14,20 @@ public:
                                           const QVariantList &annotations,
                                           int silenceType);
 
-    // Новый метод — просто копирует текущий временный файл в Music с новым именем
     Q_INVOKABLE bool finalizeSave(const QString &currentTempPath, const QString &newFileName);
+    Q_INVOKABLE bool saveMetadata(const QString &audioPath, const QVariantList &annotations, const QVariantList &voiceLabels);
+    Q_INVOKABLE QVariantMap loadMetadata(const QString &audioPath);
+
+    Q_INVOKABLE QString getFileHash(const QString &filePath);
+
+    Q_INVOKABLE QString getAppDataPath() const;
+
+    Q_INVOKABLE QVariantMap loadMetadataFromFile(const QString &jsonPath);
+
+    Q_INVOKABLE QString getMusicPath() const;
 
 private:
-    QString makeTempWavPath() const; // временный файл в кэше
+    QString makeTempWavPath() const;
 };
 
 #endif // SILENCESERVICE_H
