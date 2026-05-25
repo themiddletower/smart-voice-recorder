@@ -17,7 +17,8 @@ public:
 
     Q_INVOKABLE void registerUser(const QString& username, const QString& password);
     Q_INVOKABLE void login(const QString& username, const QString& password);
-    Q_INVOKABLE void sendDataToServer(const QString& filePath, const QString& jsonAnnotations);
+    Q_INVOKABLE void sendDataToServer( const QString& filePath, const QString& metadataJson );
+    Q_INVOKABLE void downloadMetadata( const QString& fileName );
 
     Q_INVOKABLE void refreshFileList();           // Получить список файлов
     Q_INVOKABLE void deleteFile(const QString& fileName); // Удалить файл

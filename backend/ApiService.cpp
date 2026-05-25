@@ -23,64 +23,223 @@ QString ApiService::getSavedPassword() const {
     return settings.value("auth/password").toString();
 }
 
-void ApiService::sendDataToServer(const QString& filePath, const QString& jsonAnnotations) {
-    if (jsonAnnotations.isEmpty() || jsonAnnotations == "[]") {
-        qDebug() << "[ApiService] Ошибка: нет аннотаций для отправки";
+void ApiService::sendDataToServer(const QString& filePath,
+                             const QString& metadataJson)
+{
+    // ------------------------------------------------
+    // Проверка metadata
+    // ------------------------------------------------
+
+    if (metadataJson.isEmpty()) {
+        qDebug() << "[ApiService] metadata пустой";
         return;
     }
+
+    // ------------------------------------------------
+    // Проверка авторизации
+    // ------------------------------------------------
 
     if (authToken.isEmpty()) {
-        qDebug() << "[ApiService] Ошибка: пользователь не авторизован!";
+        qDebug() << "[ApiService] Нет токена";
         return;
     }
 
+    // ------------------------------------------------
+    // Request
+    // ------------------------------------------------
+
     QUrl url(baseUrl + "/api/records");
+
     QNetworkRequest request(url);
 
-    QString headerData = "Bearer " + authToken;
-    request.setRawHeader("Authorization", headerData.toUtf8());
-    request.setRawHeader("Accept", "application/json");
-    // Content-Type для multipart установит сам QNetworkAccessManager
+    request.setRawHeader(
+        "Authorization",
+        ("Bearer " + authToken).toUtf8()
+        );
 
-    QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+    request.setRawHeader(
+        "Accept",
+        "application/json"
+        );
 
-    QHttpPart jsonPart;
-    jsonPart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"annotations\""));
-    jsonPart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("text/plain; charset=utf-8"));
-    jsonPart.setBody(jsonAnnotations.toUtf8());
+    // ------------------------------------------------
+    // Multipart
+    // ------------------------------------------------
+
+    QHttpMultiPart *multiPart =
+        new QHttpMultiPart(QHttpMultiPart::FormDataType);
+
+    // =====================================================
+    // METADATA
+    // =====================================================
+
+    QHttpPart metadataPart;
+
+    metadataPart.setHeader(
+        QNetworkRequest::ContentDispositionHeader,
+        QVariant("form-data; name=\"metadata\"")
+        );
+
+    metadataPart.setHeader(
+        QNetworkRequest::ContentTypeHeader,
+        QVariant("application/json")
+        );
+
+    metadataPart.setBody(
+        metadataJson.toUtf8()
+        );
+
+    // =====================================================
+    // AUDIO
+    // =====================================================
 
     QFile *file = new QFile(filePath);
-    if (!file->exists() || !file->open(QIODevice::ReadOnly)) {
-        qDebug() << "[ApiService] Ошибка: файл не найден или недоступен:" << filePath;
+
+    if (!file->exists() ||
+        !file->open(QIODevice::ReadOnly))
+    {
+        qDebug() << "[ApiService] Не удалось открыть файл:"
+                 << filePath;
+
         delete multiPart;
         return;
     }
 
+    QString fileName =
+        QFileInfo(filePath).fileName();
+
     QHttpPart audioPart;
-    QString fileName = filePath.split('/').last();
-    audioPart.setHeader(QNetworkRequest::ContentDispositionHeader,
-                        QVariant(QString("form-data; name=\"file\"; filename=\"%1\"").arg(fileName)));
-    audioPart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("audio/mpeg"));
+
+    audioPart.setHeader(
+        QNetworkRequest::ContentDispositionHeader,
+        QVariant(
+            QString(
+                "form-data; name=\"file\"; filename=\"%1\""
+                ).arg(fileName)
+            )
+        );
+
+    audioPart.setHeader(
+        QNetworkRequest::ContentTypeHeader,
+        QVariant("audio/wav")
+        );
+
     audioPart.setBodyDevice(file);
 
-    file->setParent(multiPart); // Файл удалится вместе с multiPart
+    file->setParent(multiPart);
 
-    multiPart->append(jsonPart);
+    // =====================================================
+    // APPEND
+    // =====================================================
+
+    multiPart->append(metadataPart);
     multiPart->append(audioPart);
 
-    QNetworkReply *reply = manager->post(request, multiPart);
-    multiPart->setParent(reply); // multiPart удалится вместе с reply
+    // =====================================================
+    // SEND
+    // =====================================================
 
-    connect(reply, &QNetworkReply::finished, [reply]() {
-        if (reply->error() == QNetworkReply::NoError) {
-            qDebug() << "[ApiService] Успех:" << reply->readAll();
-        } else {
-            qDebug() << "[ApiService] Ошибка сервера:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-            qDebug() << "[ApiService] Текст ошибки:" << reply->errorString();
-            qDebug() << "[ApiService] Ответ сервера:" << reply->readAll();
-        }
-        reply->deleteLater();
-    });
+    QNetworkReply *reply =
+        manager->post(request, multiPart);
+
+    multiPart->setParent(reply);
+
+    connect(reply,
+            &QNetworkReply::finished,
+            [reply]()
+            {
+                if (reply->error() ==
+                    QNetworkReply::NoError)
+                {
+                    qDebug() << "[ApiService] Upload success";
+                    qDebug() << reply->readAll();
+                }
+                else
+                {
+                    qDebug() << "[ApiService] Upload error";
+
+                    qDebug() << "HTTP:"
+                             << reply->attribute(
+                                         QNetworkRequest::HttpStatusCodeAttribute
+                                         ).toInt();
+
+                    qDebug() << "ERROR:"
+                             << reply->errorString();
+
+                    qDebug() << "SERVER:"
+                             << reply->readAll();
+                }
+
+                reply->deleteLater();
+            });
+}
+
+void ApiService::downloadMetadata(const QString& fileName)
+{
+    if (authToken.isEmpty())
+        return;
+
+    QUrl url(
+        baseUrl +
+        "/api/records/" +
+        fileName +
+        "/metadata"
+        );
+
+    QNetworkRequest request(url);
+
+    request.setRawHeader(
+        "Authorization",
+        ("Bearer " + authToken).toUtf8()
+        );
+
+    QNetworkReply* reply =
+        manager->get(request);
+
+    connect(reply,
+            &QNetworkReply::finished,
+            this,
+            [reply, fileName]()
+            {
+                reply->deleteLater();
+
+                if (reply->error() !=
+                    QNetworkReply::NoError)
+                {
+                    qDebug() << "[ApiService] Metadata download error:"
+                             << reply->errorString();
+
+                    return;
+                }
+
+                QByteArray data = reply->readAll();
+
+                QString dir =
+                    QStandardPaths::writableLocation(
+                        QStandardPaths::MusicLocation
+                        );
+
+                QDir().mkpath(dir);
+
+                QString jsonPath =
+                    dir + "/" + fileName + ".json";
+
+                QFile file(jsonPath);
+
+                if (!file.open(QIODevice::WriteOnly))
+                {
+                    qDebug() << "[ApiService] Cannot save metadata:"
+                             << jsonPath;
+
+                    return;
+                }
+
+                file.write(data);
+                file.close();
+
+                qDebug() << "[ApiService] Metadata saved:"
+                         << jsonPath;
+            });
 }
 
 void ApiService::login(const QString& username, const QString& password) {
@@ -187,43 +346,72 @@ void ApiService::downloadFile(const QString& fileName)
         return;
 
     QUrl url(baseUrl + "/api/records/" + fileName);
+
     QNetworkRequest request(url);
 
-    request.setRawHeader("Authorization", "Bearer " + authToken.toUtf8());
+    request.setRawHeader(
+        "Authorization",
+        ("Bearer " + authToken).toUtf8()
+        );
 
-    QNetworkReply* reply = manager->get(request);
+    QNetworkReply* reply =
+        manager->get(request);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, fileName]() {
-        reply->deleteLater();
+    connect(reply,
+            &QNetworkReply::finished,
+            this,
+            [this, reply, fileName]()
+            {
+                reply->deleteLater();
 
-        if (reply->error() != QNetworkReply::NoError) {
-            qDebug() << "[ApiService] Download error:" << reply->errorString();
-            return;
-        }
+                if (reply->error() !=
+                    QNetworkReply::NoError)
+                {
+                    qDebug() << "[ApiService] Download error:"
+                             << reply->errorString();
 
-        QByteArray data = reply->readAll();
+                    return;
+                }
 
-        qDebug() << "[ApiService] File received:" << fileName
-                 << "size:" << data.size();
+                QByteArray data = reply->readAll();
 
-        const QString dir =
-            QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+                qDebug() << "[ApiService] File received:"
+                         << fileName
+                         << "size:"
+                         << data.size();
 
-        QDir().mkpath(dir);
+                QString dir =
+                    QStandardPaths::writableLocation(
+                        QStandardPaths::MusicLocation
+                        );
 
-        const QString filePath = dir + "/" + fileName;
+                QDir().mkpath(dir);
 
-        QFile file(filePath);
-        if (!file.open(QIODevice::WriteOnly)) {
-            qDebug() << "[ApiService] Cannot write file:" << filePath;
-            return;
-        }
+                QString filePath =
+                    dir + "/" + fileName;
 
-        file.write(data);
-        file.close();
+                QFile file(filePath);
 
-        qDebug() << "[ApiService] Saved file to:" << filePath;
-    });
+                if (!file.open(QIODevice::WriteOnly))
+                {
+                    qDebug() << "[ApiService] Cannot write file:"
+                             << filePath;
+
+                    return;
+                }
+
+                file.write(data);
+                file.close();
+
+                qDebug() << "[ApiService] Saved:"
+                         << filePath;
+
+                // ==========================================
+                // DOWNLOAD METADATA
+                // ==========================================
+
+                downloadMetadata(fileName);
+            });
 }
 
 void ApiService::renameFile(const QString& oldName, const QString& newName)
