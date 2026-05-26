@@ -1,57 +1,163 @@
 #include "AudioAnalyzer.h"
-#include <fstream>
-#include <cmath>
-#include <vector>
-#include <QUrl>
-#include <QVariantMap>
-#include <QDebug>
 #include "VADModel.h"
 
-// FEATURES
-float computeRMS(const std::vector<float>& data) {
-    double sum = 0.0;
-    for (float v : data) sum += v * v;
-    return std::sqrt(sum / data.size());
-}
+#include <fstream>
+#include <vector>
+#include <cmath>
+#include <QVariantMap>
+#include <QUrl>
+#include <QDebug>
+#include <array>
 
-float computeEnergy(const std::vector<float>& data) {
-    double sum = 0.0;
-    for (float v : data) sum += v * v;
-    return sum / data.size();
-}
+// ================= CONFIG (MATCH PYTHON) =================
 
-float computeZCR(const std::vector<float>& data) {
-    int crossings = 0;
-    for (size_t i = 1; i < data.size(); i++) {
-        if ((data[i] >= 0) != (data[i - 1] >= 0))
-            crossings++;
+static constexpr float SR = 16000.0f;
+static constexpr int FRAME_MS = 50;
+static constexpr int FRAME_SIZE = (int)(SR * FRAME_MS / 1000.0f);
+
+// ================= WAV FFT (NO WINDOW, MATCH NUMPY) =================
+
+static void computeSpectrum(const std::vector<float>& x,
+                            std::vector<float>& spectrum)
+{
+    int N = (int)x.size();
+    int K = N / 2 + 1;
+
+    spectrum.assign(K, 0.0f);
+
+    const float TWO_PI = 2.0f * M_PI;
+
+    for (int k = 0; k < K; ++k)
+    {
+        float real = 0.0f;
+        float imag = 0.0f;
+
+        for (int n = 0; n < N; ++n)
+        {
+            float phase = TWO_PI * k * n / N;
+            real += x[n] * cosf(phase);
+            imag -= x[n] * sinf(phase);
+        }
+
+        spectrum[k] = sqrtf(real * real + imag * imag);
     }
-    return (float)crossings / data.size();
 }
 
-// MAIN
+// ================= FEATURES (MATCH PYTHON EXACTLY) =================
+
+static std::array<float, 5> extractFeatures(const std::vector<float>& audio)
+{
+    const int N = (int)audio.size();
+
+    // ---------- RMS ----------
+    float rms = 0.0f;
+    for (float v : audio)
+        rms += v * v;
+    rms = sqrtf(rms / N);
+
+    // ---------- ZCR (np.mean(audio[:-1] * audio[1:] < 0)) ----------
+    int zcr_count = 0;
+    for (int i = 1; i < N; ++i)
+    {
+        if (audio[i - 1] * audio[i] < 0.0f)
+            zcr_count++;
+    }
+    float zcr = (float)zcr_count / (float)(N - 1);
+
+    // ---------- FFT ----------
+    std::vector<float> spectrum;
+    computeSpectrum(audio, spectrum);
+
+    int K = (int)spectrum.size();
+
+    // ---------- Spectral centroid ----------
+    float num = 0.0f;
+    float den = 0.0f;
+
+    // ---------- flatness ----------
+    float log_sum = 0.0f;
+    float mean_sum = 0.0f;
+
+    // ---------- band ratio ----------
+    float speech_energy = 0.0f;
+    float total_energy = 0.0f;
+
+    for (int k = 0; k < K; ++k)
+    {
+        float freq = (float)k * SR / N;
+        float mag = spectrum[k];
+
+        num += freq * mag;
+        den += mag;
+
+        log_sum += logf(mag + 1e-8f);
+        mean_sum += mag;
+
+        if (freq >= 300.0f && freq <= 3000.0f)
+            speech_energy += mag;
+
+        total_energy += mag;
+    }
+
+    float centroid = num / (den + 1e-8f);
+
+    float flatness =
+        expf(log_sum / K) /
+        (mean_sum / K + 1e-8f);
+
+    float band_ratio =
+        speech_energy / (total_energy + 1e-8f);
+
+    return { rms, zcr, centroid, flatness, band_ratio };
+}
+
+// ================= WAV READER =================
+
+static std::vector<float> readMonoFrame(std::ifstream& file,
+                                        int frameSamples,
+                                        int channels)
+{
+    std::vector<int16_t> buffer(frameSamples * channels);
+
+    if (!file.read(reinterpret_cast<char*>(buffer.data()),
+                   buffer.size() * sizeof(int16_t)))
+    {
+        return {};
+    }
+
+    std::vector<float> mono(frameSamples);
+
+    for (int i = 0; i < frameSamples; i++)
+    {
+        int32_t sum = 0;
+
+        for (int c = 0; c < channels; c++)
+            sum += buffer[i * channels + c];
+
+        mono[i] = (float(sum / channels) / 32768.0f);
+    }
+
+    return mono;
+}
+
+// ================= MAIN =================
+
 QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
 {
     VADModel model;
 
-    if (!model.load(":/backend/weights.json")) {
-        qDebug() << "Failed to load weights.json";
+    if (!model.load(":/backend/weights.json"))
         return {};
-    }
 
-    if (!model.loadNorm(":/backend/norm.json")) {
-        qDebug() << "Failed to load norm.json";
+    if (!model.loadNorm(":/backend/norm.json"))
         return {};
-    }
 
-    QVariantList result;
+    QString path = filePath;
+    if (path.startsWith("file://"))
+        path = QUrl(path).toLocalFile();
 
-    QString localPath = filePath;
-    if (localPath.startsWith("file://"))
-        localPath = QUrl(localPath).toLocalFile();
-
-    std::ifstream file(localPath.toStdString(), std::ios::binary);
-    if (!file) return result;
+    std::ifstream file(path.toStdString(), std::ios::binary);
+    if (!file) return {};
 
     WAVHeader header;
     file.read(reinterpret_cast<char*>(&header), sizeof(WAVHeader));
@@ -59,155 +165,110 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     if (std::string(header.riff, 4) != "RIFF" ||
         header.audioFormat != 1 ||
         header.bitsPerSample != 16)
-        return result;
+        return {};
 
-    const uint32_t sampleRate = header.sampleRate;
-    const uint16_t channels = header.numChannels;
-    const int frameSamples = sampleRate / 50; // 20 ms
-    const double frameDurationMs = 20.0;
+    const int sampleRate = header.sampleRate;
+    const int channels = header.numChannels;
 
-    std::vector<int16_t> buffer(frameSamples * channels);
+    const int frameSamples = FRAME_SIZE; // 30ms FIXED
+
+    const double frameDurationMs = 1000.0 * frameSamples / sampleRate;
 
     std::vector<int> labels;
-    labels.reserve(10000);
-
-    // сглаживание вероятности
-    const int smoothWindow = 10;
     std::vector<float> probHistory;
 
-    // FRAME LOOP
-    while (file.read(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(int16_t))) {
+    const int smoothWindow = 10;
 
-        // --- mono + нормализация ---
-        std::vector<float> mono(frameSamples);
+    // ================= FRAME LOOP =================
 
-        for (int j = 0; j < frameSamples; j++) {
-            int32_t acc = 0;
-            for (int ch = 0; ch < channels; ch++)
-                acc += buffer[j * channels + ch];
+    while (true)
+    {
+        auto mono = readMonoFrame(file, frameSamples, channels);
+        if (mono.empty())
+            break;
 
-            float sample = float(acc / channels) / 32768.0f; // КРИТИЧНО
-            mono[j] = sample;
-        }
+        auto feats = extractFeatures(mono);
 
-        // --- features ---
-        float rms = computeRMS(mono);
-        float zcr = computeZCR(mono);
-        float energy = computeEnergy(mono);
+        float prob = model.forward(feats);
 
-        // --- inference ---
-        float prob = model.forward({rms, zcr, energy});
-
-        qDebug() << "rms:" << rms
-                 << "zcr:" << zcr
-                 << "energy:" << energy
-                 << "prob:" << prob;
-
-        // --- smoothing ---
         probHistory.push_back(prob);
         if (probHistory.size() > smoothWindow)
             probHistory.erase(probHistory.begin());
 
-        float probAvg = 0.0f;
-        for (float p : probHistory) probAvg += p;
-        probAvg /= probHistory.size();
+        float avg = 0.0f;
+        for (float p : probHistory)
+            avg += p;
+        avg /= probHistory.size();
 
-        // --- decision ---
-        //const float loudThreshold = 0.15f;
-
-        //if (rms > loudThreshold) {
-        //    labels.push_back(3); // громко
-        //} else {
-        //    labels.push_back(probAvg > 0.5f ? 1 : 2);
-        //}
-        labels.push_back(probAvg > 0.5f ? 1 : 2);
+        labels.push_back(avg > 0.5f ? 1 : 0);
     }
 
-    if (labels.empty()) return result;
+    if (labels.empty())
+        return {};
 
-    // SMOOTH LABELS
+    // ================= SMOOTHING =================
+
     const int window = 40;
     std::vector<int> smooth = labels;
 
-    for (size_t i = 0; i < labels.size(); ++i) {
-        int count[4] = {0};
+    for (size_t i = 0; i < labels.size(); ++i)
+    {
+        int count[2] = {0, 0};
 
-        for (int k = -window; k <= window; ++k) {
-            int idx = int(i) + k;
+        for (int k = -window; k <= window; k++)
+        {
+            int idx = (int)i + k;
             if (idx >= 0 && idx < (int)labels.size())
                 count[labels[idx]]++;
         }
 
-        int bestType = labels[i];
-        int bestCount = 0;
-
-        for (int t = 1; t <= 3; ++t) {
-            if (count[t] > bestCount) {
-                bestCount = count[t];
-                bestType = t;
-            }
-        }
-
-        smooth[i] = bestType;
+        smooth[i] = (count[1] > count[0]) ? 1 : 0;
     }
 
-    // SEGMENTS
-    std::vector<QVariantMap> segments;
+    // ================= SEGMENTS =================
 
-    int currentType = smooth[0];
+    QVariantList result;
+
+    int current = smooth[0];
     double t1 = 0.0;
 
-    for (size_t i = 1; i < smooth.size(); ++i) {
-        if (smooth[i] != currentType) {
+    for (size_t i = 1; i < smooth.size(); i++)
+    {
+        if (smooth[i] != current)
+        {
             double t2 = i * frameDurationMs;
 
             QVariantMap seg;
             seg["t1"] = t1;
             seg["t2"] = t2;
-            seg["type"] = currentType;
-            segments.push_back(seg);
+            seg["type"] = current;
+
+            result.append(seg);
 
             t1 = t2;
-            currentType = smooth[i];
+            current = smooth[i];
         }
     }
 
     QVariantMap last;
     last["t1"] = t1;
     last["t2"] = smooth.size() * frameDurationMs;
-    last["type"] = currentType;
-    segments.push_back(last);
+    last["type"] = current;
 
-    if (segments.empty()) return result;
+    result.append(last);
 
-    for (size_t i = 1; i < segments.size(); ++i) {
-        double prevEnd = segments[i - 1]["t2"].toDouble();
-        segments[i]["t1"] = prevEnd;
-    }
+    // ================= PADDING =================
 
-    QVariantMap current = segments[0];
+    const double pad = 400.0;
 
-    for (size_t i = 1; i < segments.size(); ++i) {
-        QVariantMap next = segments[i];
-
-        if (next["type"].toInt() == current["type"].toInt()) {
-            current["t2"] = next["t2"];
-        } else {
-            result.append(current);
-            current = next;
-        }
-    }
-    result.append(current);
-
-    // PADDING
-    const double speechPaddingMs = 400.0;
-
-    for (int i = 0; i < result.size(); ++i) {
+    for (int i = 0; i < result.size(); i++)
+    {
         QVariantMap seg = result[i].toMap();
 
-        if (seg["type"].toInt() == 1 || seg["type"].toInt() == 3) {
-            double t1 = seg["t1"].toDouble() - speechPaddingMs;
-            double t2 = seg["t2"].toDouble() + speechPaddingMs;
+        if (seg["type"].toInt() == 1)
+        {
+            double t1 = seg["t1"].toDouble() - pad;
+            double t2 = seg["t2"].toDouble() + pad;
 
             seg["t1"] = std::max(0.0, t1);
             seg["t2"] = t2;

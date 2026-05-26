@@ -1,29 +1,40 @@
-#ifndef VADMODEL_H
-#define VADMODEL_H
-
 #pragma once
+
 #include <vector>
 #include <array>
 #include <string>
 
-class VADModel {
+class VADModel
+{
 public:
+
     bool load(const std::string& path);
-
-    float forward(const std::array<float, 3>& x);
-
     bool loadNorm(const std::string& path);
 
+    float forward(const std::array<float, 5>& input);
+
 private:
-    // веса
-    std::vector<std::vector<float>> w1, w2, w3;
-    std::vector<float> b1, b2, b3;
 
     float relu(float x);
     float sigmoid(float x);
 
+    // normalization
     std::vector<float> mean;
     std::vector<float> std;
-};
 
-#endif // VADMODEL_H
+    // layer1: 5 -> 32
+    std::vector<std::vector<float>> w1;
+    std::vector<float> b1;
+
+    // layer2: 32 -> 16
+    std::vector<std::vector<float>> w2;
+    std::vector<float> b2;
+
+    // layer3: 16 -> 8
+    std::vector<std::vector<float>> w3;
+    std::vector<float> b3;
+
+    // output: 8 -> 1
+    std::vector<std::vector<float>> w4;
+    std::vector<float> b4;
+};
