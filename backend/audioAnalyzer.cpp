@@ -200,7 +200,7 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
             avg += p;
         avg /= probHistory.size();
 
-        labels.push_back(avg > 0.5f ? 1 : 0);
+        labels.push_back(avg > 0.5f ? 0 : 1);
     }
 
     if (labels.empty())
