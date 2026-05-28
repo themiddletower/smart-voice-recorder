@@ -42,27 +42,27 @@
 <context>
     <name>DictaphonePage</name>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="51"/>
+        <location filename="../qml/pages/DictaphonePage.qml" line="46"/>
         <source>Говорите громче!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="53"/>
+        <location filename="../qml/pages/DictaphonePage.qml" line="48"/>
         <source>Говорите тише!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="142"/>
+        <location filename="../qml/pages/DictaphonePage.qml" line="129"/>
         <source>Отмена</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="161"/>
+        <location filename="../qml/pages/DictaphonePage.qml" line="147"/>
         <source>Готово</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/DictaphonePage.qml" line="181"/>
+        <location filename="../qml/pages/DictaphonePage.qml" line="166"/>
         <source>Новая запись</source>
         <translation type="unfinished"></translation>
     </message>
@@ -70,22 +70,22 @@
 <context>
     <name>MainPage</name>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="39"/>
+        <location filename="../qml/pages/MainPage.qml" line="36"/>
         <source>Главная</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="55"/>
+        <location filename="../qml/pages/MainPage.qml" line="50"/>
         <source>Начать запись</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="69"/>
+        <location filename="../qml/pages/MainPage.qml" line="62"/>
         <source>Редактирование</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/MainPage.qml" line="87"/>
+        <location filename="../qml/pages/MainPage.qml" line="78"/>
         <source>Приложение для работы со звуком</source>
         <translation type="unfinished"></translation>
     </message>
@@ -93,27 +93,27 @@
 <context>
     <name>RecordingPage</name>
     <message>
-        <location filename="../qml/pages/RecordingPage.qml" line="22"/>
+        <location filename="../qml/pages/RecordingPage.qml" line="19"/>
         <source>Recording Page</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/RecordingPage.qml" line="26"/>
+        <location filename="../qml/pages/RecordingPage.qml" line="23"/>
         <source>Вы сейчас находитесь на странице записи звука</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/RecordingPage.qml" line="32"/>
+        <location filename="../qml/pages/RecordingPage.qml" line="29"/>
         <source>Запись</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/RecordingPage.qml" line="43"/>
+        <location filename="../qml/pages/RecordingPage.qml" line="38"/>
         <source>Остановка записи</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../qml/pages/RecordingPage.qml" line="54"/>
+        <location filename="../qml/pages/RecordingPage.qml" line="48"/>
         <source>Вернуться на главную страницу</source>
         <translation type="unfinished"></translation>
     </message>

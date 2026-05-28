@@ -1,11 +1,8 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
-//import com.example.sessions 1.0    Наш импорт его нужно инициализировать в main.cpp
 Page {
     objectName: "recordingPage"
     allowedOrientations: Orientation.All
-
-    //property var sessionManager: SessionManager {}   Инициализация класса
 
     property bool record: false
 
@@ -34,8 +31,6 @@ Page {
                 enabled: !record
                 onClicked: {
                     record = 1;
-                    //sessionManager Или ваш cpp файл.recordЗвука();
-
                 }
             }
 
@@ -45,7 +40,6 @@ Page {
                 enabled: record
                 onClicked: {
                     record = 0;
-                    //sessionManager Или ваш cpp файл.stopЗвукаиегоСохранениеНаТелефоне???();
                 }
 
             }

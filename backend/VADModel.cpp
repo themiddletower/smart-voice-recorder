@@ -90,33 +90,27 @@ static std::vector<float> linear(
 
 float VADModel::forward(const std::array<float, 5>& input)
 {
-    // normalize
     std::vector<float> x(5);
 
     for (int i = 0; i < 5; ++i)
         x[i] = (input[i] - mean[i]) / std[i];
 
-    // layer1: 5 -> 32
     auto h1 = linear(w1, b1, x);
 
     for (float& v : h1)
         v = relu(v);
 
-    // layer2: 32 -> 16
     auto h2 = linear(w2, b2, h1);
 
     for (float& v : h2)
         v = relu(v);
 
-    // layer3: 16 -> 8
     auto h3 = linear(w3, b3, h2);
 
     for (float& v : h3)
         v = relu(v);
 
-    // output: 8 -> 1
     auto out = linear(w4, b4, h3);
 
-    // BCEWithLogitsLoss
     return sigmoid(out[0]);
 }

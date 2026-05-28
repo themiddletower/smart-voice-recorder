@@ -93,7 +93,6 @@ Page {
         }
     }
 
-    // === ВЕРНУЛИ КОМПОНЕНТ ДИАЛОГА СОХРАНЕНИЯ ===
     Component {
         id: saveAsDialog
         Dialog {
@@ -113,7 +112,6 @@ Page {
         }
     }
 
-    // === ИСПРАВЛЕННЫЙ ДИАЛОГ ПОДТВЕРЖДЕНИЯ ВЫХОДА ===
     Component {
         id: exitConfirmDialog
         Dialog {

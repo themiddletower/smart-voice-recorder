@@ -7,11 +7,9 @@ Page {
     objectName: "dictaphonePage"
     allowedOrientations: Orientation.Portrait
 
-    // ─── Пороги уровня громкости ───
     readonly property real lowThreshold: 0.1
     readonly property real highThreshold: 0.85
 
-    // ─── Состояние ───
     property string currentRecordPath: ""
     property real   currentLevel: 0.0
     property bool   isRecording: false
@@ -21,12 +19,10 @@ Page {
     property string lastError: ""
     property int    recordingDurationMs: 0
 
-    // ─── Параметры волны (из RecordTrack) ───
     readonly property int measurementsPerHalfSec: 8
     readonly property int timelineBlockWidth: Theme.itemSizeSmall / 2
     readonly property int millisInHalfSec: 500
 
-    // Позиция указателя (для скроллинга в паузе)
     property real durationOnPointer:
         (waveformList.contentX + waveformContainer.width / 2)
         * millisInHalfSec / timelineBlockWidth
@@ -36,7 +32,6 @@ Page {
             playerController.isPlayerPage = false
     }
 
-    // ─── Форматирование HH:MM:SS ───
     function formatDuration(ms) {
         var h = Math.floor(ms / 3600000)
         var m = Math.floor((ms % 3600000) / 60000)
@@ -66,7 +61,6 @@ Page {
         playerController.resetModels()
     }
 
-    // ─── Контроллер записи ───
     AudioRecorderController {
         id: audioRecorder
 
@@ -109,7 +103,6 @@ Page {
         Component.onCompleted: setDefaultRecordSettings()
     }
 
-    // Автоскролл волны при воспроизведении
     Connections {
         target: playerController
         onPositionChanged: {
@@ -117,17 +110,11 @@ Page {
         }
     }
 
-    // ═══════════════════════════════════════════
-    //                   ВИЗУАЛ
-    // ═══════════════════════════════════════════
-
-    // Тёмный фон страницы
     Rectangle {
         anchors.fill: parent
         color: "#0F1219"
     }
 
-    // ── Шапка: Отмена / Новая запись / Готово ──
     Item {
         id: headerArea
         anchors { left: parent.left; right: parent.right; top: parent.top }
@@ -152,7 +139,6 @@ Page {
             }
         }
 
-        // Готово
         Label {
             anchors {
                 right: parent.right; rightMargin: Theme.horizontalPageMargin
@@ -172,7 +158,6 @@ Page {
             }
         }
 
-        // Заголовок
         Label {
             anchors {
                 horizontalCenter: parent.horizontalCenter
@@ -184,7 +169,6 @@ Page {
         }
     }
 
-    // ── Таймер ──
     Label {
         id: timerLabel
         anchors {
@@ -200,7 +184,6 @@ Page {
         font { pixelSize: 48; bold: true }
     }
 
-    // ── Контейнер волны ──
     Rectangle {
         id: waveformContainer
         anchors {
@@ -259,7 +242,6 @@ Page {
             }
         }
 
-        // Указатель в центре
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 2; height: parent.height
@@ -267,7 +249,6 @@ Page {
         }
     }
 
-    // ── Баннер-предупреждение (оранжевый) ──
     Rectangle {
         id: warningBanner
         anchors {
@@ -291,7 +272,6 @@ Page {
         }
     }
 
-    // ── Полоска уровня (Ваша тонкая полоска) ──
     Item {
         id: levelBar
         anchors {
@@ -318,7 +298,6 @@ Page {
         }
     }
 
-    // ── Ошибка ──
     Label {
         anchors {
             left: parent.left; right: parent.right
@@ -333,12 +312,6 @@ Page {
         font.pixelSize: Theme.fontSizeSmall
     }
 
-    // ═══════════════════════════════════
-    //   НИЖНЯЯ ПАНЕЛЬ (ОБНОВЛЕННАЯ)
-    // ═══════════════════════════════════
-    // ═══════════════════════════════════
-    //   НИЖНЯЯ ПАНЕЛЬ (ОБНОВЛЕННАЯ)
-    // ═══════════════════════════════════
     Item {
         id: bottomBar
         anchors {
@@ -349,13 +322,11 @@ Page {
         }
         height: 80
 
-        // ── Центральная кнопка (Запись / Пауза / Продолжить) ──
         Item {
             id: recordPauseBtn
             anchors.centerIn: parent
             width: 72; height: 72
 
-            // Фон кнопки: красный при старте/паузе, темно-серый когда идет запись
             Rectangle {
                 anchors.fill: parent
                 radius: width / 2
@@ -363,7 +334,6 @@ Page {
                 Behavior on color { ColorAnimation { duration: 200 } }
             }
 
-            // Иконка паузы (показывается только во время активной записи)
             Image {
                 anchors.centerIn: parent
                 source: "image://theme/icon-m-pause"
@@ -376,14 +346,11 @@ Page {
                 anchors.fill: parent
                 enabled: isReady
                 onClicked: {
-                    // В вашем C++ контроллере метод startRecord() сам
-                    // переключает состояния: Старт -> Пауза -> Продолжить
                     audioRecorder.startRecord()
                 }
             }
         }
 
-        // ── Правая кнопка (Остановка записи) ──
         Rectangle {
             anchors {
                 left: recordPauseBtn.right;
@@ -393,8 +360,7 @@ Page {
             width: 56; height: 56
             color: "#1C1B1F"
             radius: 28
-            visible: isRecording || isPaused // Появляется, если запись идет или на паузе
-
+            visible: isRecording || isPaused
             Image {
                 anchors.centerIn: parent
                 source: "image://theme/icon-m-stop"

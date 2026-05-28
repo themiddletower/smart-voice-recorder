@@ -30,7 +30,7 @@ QString SilenceService::makeTempWavPath() const
     return QDir(cacheDir).absoluteFilePath(QString("temp_edit_%1.wav").arg(ts));
 }
 
-QString makeOutputWavPath(const QString &inputPath) // старый метод оставляем для совместимости, но он больше не используется
+QString makeOutputWavPath(const QString &inputPath)
 {
     Q_UNUSED(inputPath);
     return QString();
@@ -47,7 +47,7 @@ QVariantMap SilenceService::removeSilence(const QString &inputPath,
         return result;
     }
 
-    const QString outWav = makeTempWavPath(); // ← ВРЕМЕННЫЙ ФАЙЛ
+    const QString outWav = makeTempWavPath();
 
     SilenceRemoverQt remover;
     SilenceRemoveResultQt r = remover.removeSilenceToWav(inputPath, annotations, silenceType, outWav);
@@ -67,7 +67,6 @@ QVariantMap SilenceService::removeSilence(const QString &inputPath,
     return result;
 }
 
-// Метод для получения чистого пути к папке Музыка
 QString SilenceService::getMusicPath() const {
     return QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
 }
@@ -75,7 +74,6 @@ QString SilenceService::getMusicPath() const {
 
 bool SilenceService::finalizeSave(const QString &currentTempPath, const QString &newFileName)
 {
-    // 1. Очистка пути (убираем file://)
     QString src = currentTempPath;
     if (src.startsWith("file://")) src = QUrl(src).toLocalFile();
 
@@ -89,7 +87,6 @@ bool SilenceService::finalizeSave(const QString &currentTempPath, const QString 
     qDebug() << "[C++] Из:" << src;
     qDebug() << "[C++] В:" << dest;
 
-    // 2. Обязательно удаляем, если файл уже существует
     if (QFile::exists(dest)) {
         qDebug() << "[C++] Файл уже существует, удаляю...";
         QFile::remove(dest);
@@ -99,31 +96,6 @@ bool SilenceService::finalizeSave(const QString &currentTempPath, const QString 
     qDebug() << "[C++] Результат копирования:" << ok;
     return ok;
 }
-/*
-bool SilenceService::saveMetadata(const QString &audioPath, const QVariantList &annotations, const QVariantList &voiceLabels) {
-    if (audioPath.isEmpty()) return false;
-
-    QString jsonPath = audioPath + ".json";
-    QJsonObject root;
-    root["annotations"] = QJsonArray::fromVariantList(annotations);
-    root["voiceLabels"] = QJsonArray::fromVariantList(voiceLabels);
-
-    QFile file(jsonPath);
-    if (!file.open(QIODevice::WriteOnly)) return false;
-
-    file.write(QJsonDocument(root).toJson());
-    file.close();
-    return true;
-}
-*/
-/*
-QString SilenceService::getFileHash(const QString &filePath) {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) return "";
-    // Берем первые 100КБ, чтобы не тормозить на больших файлах
-    QByteArray data = file.read(102400);
-    return QCryptographicHash::hash(data, QCryptographicHash::Md5).toHex();
-}*/
 QString SilenceService::getFileHash(const QString &filePath) {
     QString path = filePath;
     if (path.startsWith("file://")) path = QUrl(path).toLocalFile();
@@ -131,15 +103,11 @@ QString SilenceService::getFileHash(const QString &filePath) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) return "";
 
-    // 1. Получаем размер файла
     QFileInfo fileInfo(path);
     qint64 fileSize = fileInfo.size();
 
-    // 2. Читаем начало файла (100 Кб)
     QByteArray data = file.read(102400);
 
-    // 3. (Опционально) Читаем конец файла (еще 4 Кб)
-    // Это гарантирует уникальность, даже если начало у файлов одинаковое (например, тишина)
     if (fileSize > 102400 + 4096) {
         file.seek(fileSize - 4096);
         data.append(file.readAll());
@@ -147,42 +115,10 @@ QString SilenceService::getFileHash(const QString &filePath) {
 
     file.close();
 
-    // Создаем хэш от комбинированных данных + добавляем размер файла в строку
     QByteArray hash = QCryptographicHash::hash(data, QCryptographicHash::Md5).toHex();
 
-    // Результат будет выглядеть как "SIZE_HASH", например "4520332_abc123..."
     return QString::number(fileSize) + "_" + QString(hash);
 }
-
-/*
-bool SilenceService::saveMetadata(const QString &audioPath, const QVariantList &annotations, const QVariantList &voiceLabels) {
-    QString jsonPath = audioPath + ".json";
-    QJsonObject root;
-    root["annotations"] = QJsonArray::fromVariantList(annotations);
-    root["voiceLabels"] = QJsonArray::fromVariantList(voiceLabels);
-
-    QByteArray data = QJsonDocument(root).toJson();
-
-    // 1. Сохраняем основной файл (уязвим к переименованию)
-    QFile file(jsonPath);
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write(data);
-        file.close();
-    }
-
-    // 2. Сохраняем "страховку" в папку приложения (неуязвима к переименованию)
-    QString appDataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QDir().mkpath(appDataDir);
-    QString backupJson = appDataDir + "/" + getFileHash(audioPath) + ".json";
-
-    QFile backupFile(backupJson);
-    if (backupFile.open(QIODevice::WriteOnly)) {
-        backupFile.write(data);
-        backupFile.close();
-    }
-    return true;
-}
-*/
 
 bool SilenceService::saveMetadata(const QString &audioPath, const QVariantList &annotations, const QVariantList &voiceLabels) {
     QString cleanPath = audioPath;
@@ -207,30 +143,6 @@ bool SilenceService::saveMetadata(const QString &audioPath, const QVariantList &
     return true;
 }
 
-/*QVariantMap SilenceService::loadMetadata(const QString &audioPath) {
-    //QString jsonPath = audioPath + ".json";
-    QVariantMap result;
-
-    QString path = audioPath;
-    if (path.startsWith("file://")) path = QUrl(path).toLocalFile(); // ВАЖНО
-
-    QString jsonPath = path + ".json";
-    qDebug() << "[C++] Загрузка меток из:" << jsonPath;
-
-    QFile file(jsonPath);
-    if (!file.exists() || !file.open(QIODevice::ReadOnly)) {
-        return result; // Пусто, если файла нет
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    file.close();
-
-    if (doc.isObject()) {
-        result["annotations"] = doc.object()["annotations"].toArray().toVariantList();
-        result["voiceLabels"] = doc.object()["voiceLabels"].toArray().toVariantList();
-    }
-    return result;
-}*/
 QVariantMap SilenceService::loadMetadata(const QString &audioPath) {
     QString path = audioPath;
     if (path.startsWith("file://")) path = QUrl(path).toLocalFile();
@@ -264,11 +176,9 @@ QVariantMap SilenceService::loadMetadata(const QString &audioPath) {
 }
 
 QString SilenceService::getAppDataPath() const {
-    // Возвращает путь типа /home/nemo/.local/share/ru.auroraos.SmartVoiceRecorder/
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
 }
 
-// Загрузка метаданных по прямому пути к JSON файлу
 Q_INVOKABLE QVariantMap SilenceService::loadMetadataFromFile(const QString &jsonPath) {
     QVariantMap result;
     QFile file(jsonPath);

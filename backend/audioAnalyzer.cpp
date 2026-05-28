@@ -9,13 +9,9 @@
 #include <QDebug>
 #include <array>
 
-// ================= CONFIG (MATCH PYTHON) =================
-
 static constexpr float SR = 16000.0f;
 static constexpr int FRAME_MS = 50;
 static constexpr int FRAME_SIZE = (int)(SR * FRAME_MS / 1000.0f);
-
-// ================= WAV FFT (NO WINDOW, MATCH NUMPY) =================
 
 static void computeSpectrum(const std::vector<float>& x,
                             std::vector<float>& spectrum)
@@ -43,19 +39,15 @@ static void computeSpectrum(const std::vector<float>& x,
     }
 }
 
-// ================= FEATURES (MATCH PYTHON EXACTLY) =================
-
 static std::array<float, 5> extractFeatures(const std::vector<float>& audio)
 {
     const int N = (int)audio.size();
 
-    // ---------- RMS ----------
     float rms = 0.0f;
     for (float v : audio)
         rms += v * v;
     rms = sqrtf(rms / N);
 
-    // ---------- ZCR (np.mean(audio[:-1] * audio[1:] < 0)) ----------
     int zcr_count = 0;
     for (int i = 1; i < N; ++i)
     {
@@ -64,21 +56,17 @@ static std::array<float, 5> extractFeatures(const std::vector<float>& audio)
     }
     float zcr = (float)zcr_count / (float)(N - 1);
 
-    // ---------- FFT ----------
     std::vector<float> spectrum;
     computeSpectrum(audio, spectrum);
 
     int K = (int)spectrum.size();
 
-    // ---------- Spectral centroid ----------
     float num = 0.0f;
     float den = 0.0f;
 
-    // ---------- flatness ----------
     float log_sum = 0.0f;
     float mean_sum = 0.0f;
 
-    // ---------- band ratio ----------
     float speech_energy = 0.0f;
     float total_energy = 0.0f;
 
@@ -111,8 +99,6 @@ static std::array<float, 5> extractFeatures(const std::vector<float>& audio)
     return { rms, zcr, centroid, flatness, band_ratio };
 }
 
-// ================= WAV READER =================
-
 static std::vector<float> readMonoFrame(std::ifstream& file,
                                         int frameSamples,
                                         int channels)
@@ -139,8 +125,6 @@ static std::vector<float> readMonoFrame(std::ifstream& file,
 
     return mono;
 }
-
-// ================= MAIN =================
 
 QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
 {
@@ -170,7 +154,7 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     const int sampleRate = header.sampleRate;
     const int channels = header.numChannels;
 
-    const int frameSamples = FRAME_SIZE; // 30ms FIXED
+    const int frameSamples = FRAME_SIZE;
 
     const double frameDurationMs = 1000.0 * frameSamples / sampleRate;
 
@@ -178,8 +162,6 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     std::vector<float> probHistory;
 
     const int smoothWindow = 10;
-
-    // ================= FRAME LOOP =================
 
     while (true)
     {
@@ -200,13 +182,11 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
             avg += p;
         avg /= probHistory.size();
 
-        labels.push_back(avg > 0.5f ? 0 : 1);
+        labels.push_back(avg > 0.5f ? 1 : 2);
     }
 
     if (labels.empty())
         return {};
-
-    // ================= SMOOTHING =================
 
     const int window = 40;
     std::vector<int> smooth = labels;
@@ -222,11 +202,8 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
                 count[labels[idx]]++;
         }
 
-        smooth[i] = (count[1] > count[0]) ? 1 : 0;
+        smooth[i] = (count[1] > count[0]) ? 1 : 2;
     }
-
-    // ================= SEGMENTS =================
-
     QVariantList result;
 
     int current = smooth[0];
@@ -256,8 +233,6 @@ QVariantList AudioAnalyzer::analyzeFile(const QString &filePath)
     last["type"] = current;
 
     result.append(last);
-
-    // ================= PADDING =================
 
     const double pad = 400.0;
 

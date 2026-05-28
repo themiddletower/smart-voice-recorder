@@ -9,7 +9,6 @@ const static qreal s_minimalAmplitude = 0.05;
 
 namespace AudioBufferExtension {
 
-// --- Функция для Плеера (массив значений) ---
 QList<qreal> calculateAmplitudes(const QAudioBuffer &buffer, int measurementsPerSec)
 {
     QList<qreal> resultList;
@@ -75,7 +74,6 @@ QList<qreal> calculateAmplitudes(const QAudioBuffer &buffer, int measurementsPer
     return resultList;
 }
 
-// --- Старая функция для Диктофона (одно значение) ---
 qreal calculateAmplitude(const QAudioBuffer &buffer)
 {
     QAudioFormat format = buffer.format();
@@ -126,4 +124,4 @@ qreal calculateAmplitude(const QAudioBuffer &buffer)
     return qBound<qreal>(s_minimalAmplitude, currentLevel, 1.0);
 }
 
-} // namespace AudioBufferExtension
+}

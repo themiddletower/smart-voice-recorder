@@ -55,7 +55,6 @@ void AudioRecorderController::setDefaultRecordSettings()
         return;
     }
 
-    // Предпочитаем wav + PCM — самый совместимый вариант
     QString codec = "audio/PCM";
     QString container = "wav";
 
@@ -67,7 +66,6 @@ void AudioRecorderController::setDefaultRecordSettings()
     qDebug() << "Using codec:" << codec << "container:" << container;
     audioRecorder.setRecordSettings(codec, container);
 
-    // Принудительно сообщаем что готовы
     emit recorderPrepared();
 }
 
